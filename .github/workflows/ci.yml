@@ -1,0 +1,190 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env: { POSTGRES_USER: memora, POSTGRES_PASSWORD: memora, POSTGRES_DB: memora }
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U memora" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.10"
+          enable-cache: true
+      # The production image installs fonts-nanum (backend/Dockerfile): the link card draws
+      # Hangul with it. Without the same font here Pillow falls back to its 10px bitmap face.
+      - name: Install the fonts the backend image ships
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends fonts-nanum
+      - run: cd backend && uv sync --frozen --extra dev
+      - run: cd backend && uv run ruff check src tests
+      - run: cd backend && uv run pytest -vv --durations=20
+        env:
+          # backend/tests/conftest.py drops and recreates memora_test through the
+          # memora role, so the service database and these names have to agree.
+          MEMORA_DATABASE_URL: postgresql+asyncpg://memora:memora@127.0.0.1:55432/memora_test
+          MEMORA_DATA_DIR: /tmp/memora-data
+          MEMORA_CLAUDE_HOME: /tmp/memora-claude
+          OPENBLAS_NUM_THREADS: "1"
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: cd frontend && npm ci
+      - name: Audit production dependencies
+        run: cd frontend && npm audit --omit=dev --audit-level=high
+      - run: cd frontend && npm run lint --if-present
+      - run: cd frontend && npx tsc --noEmit
+      - run: cd frontend && npm run build
+
+  desktop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      # 여기서는 묶음을 굽고 계약만 본다. 설치본을 만드는 것은 릴리스 워크플로의
+      # 일이고, Electron 실행 파일은 100MB가 넘어 매 푸시마다 받을 이유가 없다.
+      - run: cd desktop && npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      - run: cd desktop && npm run typecheck
+      - run: cd desktop && npm test
+      - run: cd desktop && npx electron-vite build
+      # 접속기 규칙은 사람이 지키는 것이 아니라 여기서 지켜진다.
+      - name: 접속기 규칙
+        run: |
+          set -eu
+          cd desktop
+          # 본창의 세 문(대화·소식·커뮤니티)은 memo-ora.com 의 웹이어야 한다(0.8, 앱=틀). 앱이 제 화면을
+          # 끼워 넣으면 그때부터 웹에서 쓰는 것과 앱에서 쓰는 것이 갈라진다.
+          grep -q "loadURL(ORIGIN + (path ?? doorHome(door)))" src/main/window.ts \
+            || { echo "::error::본창의 문이 더는 memo-ora.com 을 열지 않습니다"; exit 1; }
+          for home in "'/app/chat'" "'/app/feed'" "'/app/community'"; do
+            grep -q "home: $home" src/shared/contract.ts \
+              || { echo "::error::문 $home 이 웹 주소가 아닙니다"; exit 1; }
+          done
+          # 서버 주소는 고정이다.
+          grep -q "export const ORIGIN = 'https://memo-ora.com'" src/shared/contract.ts \
+            || { echo "::error::서버 주소가 고정이 아닙니다"; exit 1; }
+          # 앱은 갱신하지 않는다. 웹과 같은 갱신 쿠키로 따로 갱신하면 서버가
+          # 토큰 도난으로 보고 세션을 끊는다 (plan/46 §2).
+          ! grep -rn "auth/refresh" src/main/ \
+            || { echo "::error::앱이 다시 갱신을 시도합니다 (plan/46 §2)"; exit 1; }
+          echo "본창은 웹, 주소는 고정, 갱신하는 쪽은 웹 하나"
+
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The compose CPU limits are sized for the 4-core production host. Docker rejects a limit
+    # above the machine's core count, and this runner has two.
+    env:
+      MEMORA_POSTGRES_CPUS: "1.0"
+      MEMORA_BACKEND_CPUS: "2.0"
+      MEMORA_WORKER_CPUS: "1.0"
+      MEMORA_FRONTEND_CPUS: "1.0"
+      MEMORA_SEAWEEDFS_CPUS: "0.5"
+      MEMORA_NGINX_CPUS: "0.5"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate shell scripts
+        run: shellcheck backend/entrypoint.sh deploy/scripts/*.sh
+      - name: Validate Compose
+        run: |
+          cd deploy
+          cp .env.example .env
+          # Generated per run: a literal placeholder here trips secret scanners on every PR.
+          sed -i \
+            -e "s|^MEMORA_SECRET_KEY=$|MEMORA_SECRET_KEY=$(openssl rand -hex 32)|" \
+            -e "s|^MEMORA_BOOTSTRAP_TOKEN=$|MEMORA_BOOTSTRAP_TOKEN=$(openssl rand -hex 32)|" \
+            -e "s|^MEMORA_ENCRYPTION_KEY=$|MEMORA_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr '+/' '-_')|" \
+            -e "s|^POSTGRES_PASSWORD=$|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" \
+            -e "s|^S3_SECRET_KEY=$|S3_SECRET_KEY=$(openssl rand -hex 32)|" \
+            .env
+          docker compose -p memora config -q
+      - name: Build production images
+        run: |
+          cd deploy
+          docker compose -p memora build backend frontend
+      - name: Smoke production stack
+        run: |
+          cd deploy
+          docker compose -p memora up -d postgres backend worker frontend nginx
+          healthy=0
+          for _ in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:58700/health >/dev/null; then
+              healthy=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$healthy" -ne 1 ]; then
+            docker compose -p memora ps
+            docker compose -p memora logs --no-color backend worker frontend nginx postgres
+            exit 1
+          fi
+          for service in backend worker; do
+            uid="$(docker compose -p memora exec -T "$service" sh -c "awk '/^Uid:/{print \$2}' /proc/1/status")"
+            if [ "$uid" != "10001" ]; then
+              echo "$service PID 1 is not running as uid 10001 (got $uid)" >&2
+              docker compose -p memora logs --no-color "$service"
+              exit 1
+            fi
+          done
+          docker compose -p memora ps
+      - name: Check the promises the web tier makes
+        run: |
+          set -eu
+          B=http://127.0.0.1:58700
+          # A member's address is one address. /p/... is only the inside of the rewrite.
+          loc="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' "$B/p/somebody")"
+          case "$loc" in
+            "308 $B/@somebody") ;;
+            *) echo "a person's page did not settle on one address: got [$loc]" >&2; exit 1 ;;
+          esac
+          # The widget can only work if another site may frame the visitor page, and the
+          # console must stay unframeable whatever that costs the widget.
+          pub="$(curl -sSI "$B/secretary/abc" | tr -d '\r' | grep -i '^content-security-policy:' || true)"
+          case "$pub" in
+            *"frame-ancestors *"*) ;;
+            *) echo "the visitor page cannot be embedded any more: [$pub]" >&2; exit 1 ;;
+          esac
+          app="$(curl -sSI "$B/app" | tr -d '\r' | grep -i "^content-security-policy:" || true)"
+          case "$app" in
+            *"frame-ancestors 'self'"*) ;;
+            *) echo "the console is framable by other sites: [$app]" >&2; exit 1 ;;
+          esac
+          echo "one address per person, embeddable visitor page, unframeable console"
+      - name: Tear down smoke stack
+        if: always()
+        run: cd deploy && docker compose -p memora down -v --remove-orphans

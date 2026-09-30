@@ -1,0 +1,23 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+backend/.env
+deploy/.env
+deploy/backup.env
+node_modules/
+.next/
+frontend/out/
+*.log
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+
+# local verification screenshots (Playwright scratch output)
+verify/
+audit/
+
+# object storage (never commit the file it generates)
+deploy/seaweedfs/s3.json
+tools/oauth_demo/out/

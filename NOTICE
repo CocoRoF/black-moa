@@ -1,0 +1,5 @@
+my-first-secretary-geny (Memora)
+Copyright 2026 CocoRoF (JangHaryeom)
+
+Built on geny-executor and geny-memory-adaptor (Apache-2.0, CocoRoF).
+Bundles the Claude Code CLI (@anthropic-ai/claude-code) at container build time under Anthropic's terms.

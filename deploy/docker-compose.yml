@@ -1,0 +1,307 @@
+# Memora — production stack. Usage (server): cd deploy && sudo docker compose -p memora up -d --build
+#
+# Host budgets (plan/32 §1). This host has 4 CPU and 11.4GB and, since odysseus and RAG
+# Backborn both moved to the 2222 machine on 2026-09-11, Memora is the only thing on it.
+# Every container had `cpus=0 mem=0` — unlimited — which meant a runaway worker could
+# starve the backend and Postgres alike. The budgets below are sized for a dedicated host:
+# about 9.5GB of the 11.4 is handed out, leaving the rest for the kernel and page cache.
+#
+# The CPU limits deliberately sum to more than four: a limit is not a reservation, and the
+# point is that no single container can take the machine, not that each is boxed into a
+# quarter of it. The memory limits deliberately sum to *less* than the host, because two
+# containers reaching their limits at once must not become a host OOM — the kernel would
+# then kill something of its own choosing rather than the container that misbehaved.
+# `mem_reservation` is what protects Postgres: it is the last thing that should be squeezed.
+#
+# Each CPU limit reads MEMORA_<SERVICE>_CPUS and falls back to the value sized for this host.
+# Docker refuses a limit larger than the machine, so a smaller box (the 2-core CI runner that
+# smokes this stack) sets them lower; the production .env leaves them unset.
+name: memora
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: memora-postgres
+    cpus: ${MEMORA_POSTGRES_CPUS:-2.5}
+    mem_limit: 2560m
+    mem_reservation: 1g
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-memora}
+      POSTGRES_USER: ${POSTGRES_USER:-memora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      TZ: ${TZ:-Asia/Seoul}
+    # Stock defaults are sized for a laptop: 100 connections and 128MB of shared buffers.
+    # max_connections is the budget every process draws from (backend 30, worker 12, the
+    # read-only console role, and a human with psql), so it is set from that sum with room
+    # rather than left where two more processes would exhaust it. shared_buffers is already
+    # far larger than the whole database — that is deliberate headroom, not a guess.
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=768MB
+      - -c
+      - effective_cache_size=2560MB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=256MB
+      # SSD: a random page costs almost what a sequential one does, and the planner should
+      # know it before it decides to sequential-scan api_requests.
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - effective_io_concurrency=200
+      - -c
+      - max_parallel_workers_per_gather=2
+      - -c
+      - wal_compression=on
+    # Parallel workers hand results to each other through /dev/shm, which Docker gives 64MB.
+    shm_size: 256m
+    volumes:
+      - memora-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-memora} -d ${POSTGRES_DB:-memora}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [memora-net]
+
+  backend:
+    build:
+      context: ../backend
+      args:
+        CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-2.1.236}
+    image: memora-backend
+    container_name: memora-backend
+    cpus: ${MEMORA_BACKEND_CPUS:-3.0}
+    mem_limit: 3584m
+    mem_reservation: 1536m
+    restart: unless-stopped
+    init: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_started
+    environment:
+      MEMORA_PUBLIC_URL: ${MEMORA_PUBLIC_URL:?set MEMORA_PUBLIC_URL}
+      MEMORA_SECRET_KEY: ${MEMORA_SECRET_KEY:?set MEMORA_SECRET_KEY}
+      MEMORA_BOOTSTRAP_TOKEN: ${MEMORA_BOOTSTRAP_TOKEN:-}
+      MEMORA_ENCRYPTION_KEY: ${MEMORA_ENCRYPTION_KEY:-}
+      MEMORA_ENCRYPTION_KEY_PREVIOUS: ${MEMORA_ENCRYPTION_KEY_PREVIOUS:-}
+      MEMORA_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memora}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-memora}
+      MEMORA_INTERNAL_API_URL: http://127.0.0.1:8000
+      MEMORA_DATA_DIR: /data
+      # Requests are short now that a stream returns its connection before it waits, so
+      # this is a throughput dial rather than a leak allowance (plan/32 §3).
+      MEMORA_DB_POOL_SIZE: ${MEMORA_DB_POOL_SIZE:-16}
+      MEMORA_DB_MAX_OVERFLOW: ${MEMORA_DB_MAX_OVERFLOW:-24}
+      MEMORA_S3_ENDPOINT: ${MEMORA_S3_ENDPOINT:-http://seaweedfs:8333}
+      MEMORA_S3_BUCKET: ${MEMORA_S3_BUCKET:-memora}
+      MEMORA_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-memora}
+      MEMORA_S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
+      MEMORA_CLAUDE_HOME: /home/memora/.claude
+      CLAUDE_CONFIG_DIR: /home/memora/.claude
+      # A stable name for this process. Left to default it is the container hostname, which
+      # changes on every recreate — so each deploy added a row to process_stats and the
+      # host's capacity was counted twice over until the old one aged out (plan/32 §6). It
+      # also names the connections in pg_stat_activity.
+      MEMORA_WORKER_ID: ${MEMORA_API_ID:-api-1}
+      MEMORA_LOG_LEVEL: ${MEMORA_LOG_LEVEL:-INFO}
+      MEMORA_TIMEZONE: ${TZ:-Asia/Seoul}
+      MEMORA_OUTBOUND_ALLOWED_PORTS: ${MEMORA_OUTBOUND_ALLOWED_PORTS:-80,443}
+      MEMORA_PARSER_TIMEOUT_SECONDS: ${MEMORA_PARSER_TIMEOUT_SECONDS:-20}
+      MEMORA_PARSER_MEMORY_MB: ${MEMORA_PARSER_MEMORY_MB:-512}
+      MEMORA_PARSER_MAX_OUTPUT_BYTES: ${MEMORA_PARSER_MAX_OUTPUT_BYTES:-8388608}
+      TZ: ${TZ:-Asia/Seoul}
+    volumes:
+      # /data also holds the Claude account pool's per-account CLI homes
+      # (/data/claude-accounts/<id>), so a pooled login survives a redeploy.
+      - memora-data:/data
+      # $HOME is a volume so the CLI can keep its own state files next to .claude even
+      # though the image layer is read-only; the deeper .claude mount still wins.
+      - memora-home:/home/memora
+      - memora-claude:/home/memora/.claude
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=128m
+      - /home/memora/.cache:rw,nosuid,nodev,size=128m,uid=10001,gid=10001
+    expose: ["8000"]
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, SETUID, SETGID]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 512
+    networks: [memora-net]
+
+  worker:
+    image: memora-backend
+    container_name: memora-worker
+    cpus: ${MEMORA_WORKER_CPUS:-2.5}
+    mem_limit: 2048m
+    mem_reservation: 768m
+    restart: unless-stopped
+    command: ["worker"]
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      MEMORA_PUBLIC_URL: ${MEMORA_PUBLIC_URL}
+      MEMORA_SECRET_KEY: ${MEMORA_SECRET_KEY}
+      MEMORA_BOOTSTRAP_TOKEN: ${MEMORA_BOOTSTRAP_TOKEN:-}
+      MEMORA_ENCRYPTION_KEY: ${MEMORA_ENCRYPTION_KEY:-}
+      MEMORA_ENCRYPTION_KEY_PREVIOUS: ${MEMORA_ENCRYPTION_KEY_PREVIOUS:-}
+      MEMORA_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memora}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-memora}
+      MEMORA_INTERNAL_API_URL: http://backend:8000
+      MEMORA_DATA_DIR: /data
+      # The worker runs a handful of jobs at a time, not a request stream: a smaller pool
+      # leaves the shared Postgres budget to the API.
+      MEMORA_DB_POOL_SIZE: ${MEMORA_DB_POOL_SIZE_WORKER:-8}
+      MEMORA_DB_MAX_OVERFLOW: ${MEMORA_DB_MAX_OVERFLOW_WORKER:-8}
+      MEMORA_WORKER_CONCURRENCY: ${MEMORA_WORKER_CONCURRENCY:-8}
+      MEMORA_S3_ENDPOINT: ${MEMORA_S3_ENDPOINT:-http://seaweedfs:8333}
+      MEMORA_S3_BUCKET: ${MEMORA_S3_BUCKET:-memora}
+      MEMORA_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-memora}
+      MEMORA_S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
+      MEMORA_CLAUDE_HOME: /home/memora/.claude
+      CLAUDE_CONFIG_DIR: /home/memora/.claude
+      MEMORA_WORKER_ID: worker-1
+      MEMORA_LOG_LEVEL: ${MEMORA_LOG_LEVEL:-INFO}
+      MEMORA_TIMEZONE: ${TZ:-Asia/Seoul}
+      MEMORA_OUTBOUND_ALLOWED_PORTS: ${MEMORA_OUTBOUND_ALLOWED_PORTS:-80,443}
+      MEMORA_PARSER_TIMEOUT_SECONDS: ${MEMORA_PARSER_TIMEOUT_SECONDS:-20}
+      MEMORA_PARSER_MEMORY_MB: ${MEMORA_PARSER_MEMORY_MB:-512}
+      MEMORA_PARSER_MAX_OUTPUT_BYTES: ${MEMORA_PARSER_MAX_OUTPUT_BYTES:-8388608}
+      TZ: ${TZ:-Asia/Seoul}
+    volumes:
+      - memora-data:/data
+      - memora-home:/home/memora
+      - memora-claude:/home/memora/.claude
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=128m
+      - /home/memora/.cache:rw,nosuid,nodev,size=128m,uid=10001,gid=10001
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, SETUID, SETGID]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 1024
+    healthcheck:
+      # autoheal is gone (docker.sock) and procps with it; the worker's liveness file is
+      # the only thing that still distinguishes "running" from "wedged" to docker.
+      test: ["CMD-SHELL", "python -c \"import pathlib,time,sys; p=pathlib.Path('/data/.worker-alive'); sys.exit(0 if p.exists() and time.time()-p.stat().st_mtime < 180 else 1)\""]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    networks: [memora-net]
+
+  frontend:
+    build:
+      context: ../frontend
+    image: memora-frontend
+    container_name: memora-frontend
+    cpus: ${MEMORA_FRONTEND_CPUS:-1.0}
+    mem_limit: 640m
+    mem_reservation: 192m
+    restart: unless-stopped
+    environment:
+      INTERNAL_API_URL: http://backend:8000
+      # Where this install actually is. Without it every og:image a crawler is handed
+      # points at localhost, so a shared link previews as an empty rectangle.
+      PUBLIC_URL: ${MEMORA_PUBLIC_URL:?set MEMORA_PUBLIC_URL}
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    expose: ["3000"]
+    depends_on: [backend]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=64m
+      - /app/.next/cache:rw,nosuid,nodev,size=64m,uid=1001,gid=1001
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    # A wedged Next server keeps its process alive, so `restart: unless-stopped` never
+    # notices. /login is served without a backend round trip, which keeps this a check of
+    # the frontend itself rather than of the API behind it.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/login || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks: [memora-net]
+
+  # Object storage. One process runs master, volume, filer and the S3 gateway — this is a
+  # single-machine deployment, and three containers to coordinate would be ceremony. The
+  # data lives in a volume, so the app stops caring which pod wrote a file.
+  seaweedfs:
+    image: chrislusf/seaweedfs:3.80
+    container_name: memora-seaweedfs
+    cpus: ${MEMORA_SEAWEEDFS_CPUS:-1.0}
+    mem_limit: 768m
+    mem_reservation: 256m
+    restart: unless-stopped
+    # The identity file is written here at boot rather than bind-mounted. A mounted path
+    # that does not exist on the host is created by Docker as a *directory*, and the
+    # gateway then dies with "is a directory" on every start — which is exactly what
+    # happened, because the file was gitignored and its generator script was never called
+    # by anything. Generated inside, a fresh clone simply works.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        printf '{"identities":[{"name":"memora","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Read","Write","List","Tagging","Admin"]}]}' \
+          "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" > /tmp/s3.json
+        exec weed server -dir=/data -master.volumeSizeLimitMB=1024 -volume.max=0 \
+          -s3 -s3.port=8333 -s3.config=/tmp/s3.json -filer -ip=seaweedfs
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-memora}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
+    volumes:
+      - memora-seaweed:/data
+    expose: ["8333"]
+    healthcheck:
+      # An authenticated gateway answers an anonymous request with 403, which wget calls a
+      # failure — so the old check could only ever pass while auth was broken. What matters
+      # is that something is speaking HTTP on the port.
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://127.0.0.1:8333 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    security_opt: ["no-new-privileges:true"]
+    networks: [memora-net]
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: memora-nginx
+    cpus: ${MEMORA_NGINX_CPUS:-0.5}
+    mem_limit: 128m
+    mem_reservation: 64m
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${NGINX_PORT:-58700}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [backend, frontend]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks: [memora-net]
+
+volumes:
+  memora-seaweed:
+  memora-pgdata:
+  memora-data:
+  memora-home:
+  memora-claude:
+
+networks:
+  memora-net:
+    name: memora-net

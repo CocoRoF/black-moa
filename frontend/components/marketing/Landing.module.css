@@ -1,0 +1,162 @@
+.landing {
+  max-width: 1248px;
+  margin-inline: auto;
+  padding: 0 40px;
+}
+
+.bootstrap {
+  margin-top: 24px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 0.875rem;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 40px;
+  padding-block: 104px 112px;
+}
+
+.intro { position: relative; z-index: 1; padding-bottom: 56px; }
+.eyebrow {
+  margin-bottom: 28px;
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 550;
+  letter-spacing: 0.025em;
+}
+.title {
+  margin: 0;
+  font-size: clamp(2.5rem, 4.7vw, 4rem);
+  font-weight: 550;
+  letter-spacing: -0.055em;
+  line-height: 1.24;
+}
+.title > span:not(:first-child) { display: block; }
+.title > span:last-child { color: var(--muted-fg); }
+.customTitle { overflow-wrap: anywhere; }
+.description {
+  max-width: 22rem;
+  margin-top: 28px;
+  color: var(--muted-fg);
+  font-size: 1rem;
+  line-height: 1.85;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  margin-top: 36px;
+}
+.primaryLink {
+  display: inline-flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 14px 24px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-fg);
+  font-size: 0.9375rem;
+  font-weight: 550;
+  transition: background 160ms ease;
+}
+.primaryLink svg { flex-shrink: 0; transition: transform 160ms ease; }
+.loginLink {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding-inline: 4px;
+  color: var(--muted-fg);
+  font-size: 0.875rem;
+  text-underline-offset: 5px;
+}
+.visual {
+  position: relative;
+  min-width: 0;
+  /* Keep the overlapping conversation in normal flow for translated or enlarged text. */
+  padding-bottom: 48px;
+}
+.photograph {
+  position: relative;
+  aspect-ratio: 0.96;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--muted);
+}
+.photo { object-fit: cover; object-position: 50% 35%; }
+:global(.dark) .photo { filter: brightness(0.78); }
+.conversation {
+  position: relative;
+  z-index: 2;
+  width: min(340px, calc(100% - 24px));
+  margin: -152px 0 -48px -56px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 16px 48px -20px rgb(17 24 39 / 0.24);
+}
+:global(.dark) .conversation { box-shadow: 0 16px 48px -20px rgb(0 0 0 / 0.65); }
+.conversationHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.secretary { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; font-weight: 600; }
+.exampleLabel { color: var(--muted-fg); font-size: 0.75rem; }
+.messages {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding-top: 18px;
+  font-size: 0.875rem;
+  line-height: 1.75;
+}
+.question {
+  align-self: flex-end;
+  max-width: 95%;
+  padding: 9px 13px;
+  border-radius: 12px 12px 3px 12px;
+  background: var(--muted);
+}
+.answer { max-width: 95%; padding-right: 6px; }
+@media (hover: hover) {
+  .primaryLink:hover { background: color-mix(in srgb, var(--primary), var(--fg) 20%); }
+  .primaryLink:hover svg { transform: translate(2px, -2px); }
+  .loginLink:hover { color: var(--fg); text-decoration: underline; }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .landing { padding-inline: 32px; }
+  .hero { gap: 24px; padding-block: 80px 88px; }
+  .title { font-size: clamp(2.2rem, 4.35vw, 2.8rem); }
+  .conversation { margin-left: -24px; }
+}
+
+@media (max-width: 767px) {
+  .landing { padding: 0 20px; }
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 48px; padding-block: 64px; }
+  .intro { padding-bottom: 0; }
+  .eyebrow { margin-bottom: 22px; }
+  .title { font-size: clamp(2rem, 7.4vw + 0.25rem, 3.75rem); line-height: 1.28; }
+  .description { max-width: 22rem; margin-top: 24px; }
+  .actions { margin-top: 28px; }
+  .photograph { aspect-ratio: 1.14; }
+  .conversation { width: min(340px, calc(100% - 24px)); margin: -100px 0 -48px 12px; padding: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryLink, .primaryLink svg { transition: none; }
+}

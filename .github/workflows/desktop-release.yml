@@ -1,0 +1,128 @@
+name: desktop-release
+
+# 태그를 밀면 세 운영체제에서 동시에 굽고 한 릴리스에 붙인다.
+# workflow_dispatch 는 태그 없이 같은 것을 굽기만 한다(배포는 안 한다).
+on:
+  push:
+    tags: ['desktop-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: desktop
+
+jobs:
+  # 릴리스는 **한 번만** 만든다. 러너마다 만들게 두면 진 쪽이 422 already_exists 로
+  # 죽는다. 설치본을 다 구워 놓고 마지막에 죽는 것이라 제일 아깝다.
+  prepare:
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: 초안 릴리스 준비
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          # actions/checkout 은 주석 달린 태그를 커밋만 가리키는 태그로 받아 온다. 그대로 --notes-from-tag 를
+          # 쓰면 릴리스 노트가 태그 메시지가 아니라 커밋 메시지가 된다(0.7.0~0.8.1 이 그랬다). 태그 자체를 다시
+          # 받아 그 본문(첫 줄 제목은 빼고)을 노트로 쓴다. Memora 다운로드 센터가 이것을 그대로 보여 준다.
+          git fetch --force --depth=1 origin "+refs/tags/${tag}:refs/tags/${tag}"
+          notes=$(git tag -l --format='%(contents:body)' "$tag")
+          [ -n "$notes" ] || notes=$(git tag -l --format='%(contents:subject)' "$tag")
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "이미 있는 릴리스를 씁니다: $tag"
+          else
+            gh release create "$tag" --draft --title "Memora 앱 ${tag#desktop-}" --notes "$notes"
+          fi
+
+  build:
+    needs: [prepare]
+    if: always() && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # glibc 바닥: 더 새 러너는 옛 배포판에 없는 심볼을 건다
+          - os: ubuntu-22.04
+            name: linux
+          # 맥 러너 하나가 arm64 와 x64 를 같이 굽는다(electron-builder.yml).
+          # 두 번째 맥 잡을 두면 같은 dmg 두 개를 다시 구우며 귀한 러너만 잡아먹는다.
+          - os: macos-14
+            name: macos
+          - os: windows-2022
+            name: windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      # electron-builder 에게 올리기를 맡기지 않는다. 그쪽은 태그를
+      # package.json 의 버전에서 `v<버전>` 으로 지어내므로, 우리가 민 태그가 아니라
+      # 엉뚱한 릴리스를 새로 만들어 거기에 올린다(v0.6.0 에서 실제로 겪었다).
+      # 굽기만 하고, 어디에 올릴지는 아래 publish 가 태그로 못 박는다.
+      - name: 설치본 만들기
+        shell: bash
+        run: npx electron-builder --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: memora-${{ matrix.name }}
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.exe
+            desktop/release/*.deb
+          if-no-files-found: error
+          retention-days: 14
+
+  # 세 운영체제가 다 들어온 뒤에야 릴리스를 보이게 한다.
+  # 반쯤 찬 릴리스는 늦은 릴리스보다 나쁘다.
+  publish:
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+
+      - name: 우리 태그에 올리고 공개
+        # 맨 위 defaults 의 working-directory(desktop) 가 이 잡의 run 에도 걸린다.
+        # 내려받은 설치본은 작업 공간 뿌리에 있으므로 거기서 찾아야 한다.
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ls -lh installers
+          # 세 운영체제가 다 들어왔는지 먼저 본다. 반쯤 찬 릴리스는 늦은 릴리스보다 나쁘다.
+          for pat in '*.exe' '*.dmg' '*.deb'; do
+            count=$(find installers -name "$pat" | wc -l)
+            [ "$count" -gt 0 ] || { echo "::error::$pat 설치본이 없습니다"; exit 1; }
+          done
+          gh release upload "${GITHUB_REF_NAME}" installers/* --clobber
+          gh release edit "${GITHUB_REF_NAME}" --draft=false
+
+  # 공개하자마자 Memora 다운로드 센터에 알린다(plan/64). 저장소가 비공개라 사람은 거기서 받는다.
+  memora:
+    needs: [publish]
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    permissions:
+      contents: read
+    uses: ./.github/workflows/memora-downloads.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets: inherit

@@ -1,0 +1,11 @@
+# A local uv venv is ~390MB and is rebuilt inside the image anyway; sending it as build
+# context slows every local build and can defeat the cache.
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.git
+.env
+tests
+*.md

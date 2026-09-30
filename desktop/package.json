@@ -1,0 +1,48 @@
+{
+  "name": "memora-desktop",
+  "version": "0.8.10",
+  "description": "Memora — 비서와 대화·소식·커뮤니티를 쓰는 앱, 곁에 뜨는 아바타와 빠른 대화",
+  "author": {
+    "name": "CocoRoF",
+    "email": "gkfua00@gmail.com"
+  },
+  "license": "Apache-2.0",
+  "main": "./out/main/index.js",
+  "private": true,
+  "homepage": "https://memo-ora.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CocoRoF/my-first-secretary-geny.git"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "npm run typecheck && electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "tsx --tsconfig tsconfig.node.json --test test/*.test.ts",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^43.4.1",
+    "electron-builder": "^26.0.12",
+    "electron-vite": "^5.0.0",
+    "lucide-react": "^0.468.0",
+    "postcss": "^8.4.49",
+    "pretendard": "^1.3.9",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.20.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  },
+  "desktopName": "memora.desktop"
+}

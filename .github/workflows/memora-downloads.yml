@@ -1,0 +1,57 @@
+name: memora-downloads
+
+# Memora 다운로드 센터에 새 릴리스를 알린다 (plan/64).
+#
+# 저장소가 비공개라 Memora 서버는 혼자서 설치본을 받을 수 없다. 오래 사는 토큰을 서버에 두는 대신, 이 잡의
+# GITHUB_TOKEN(이 저장소 읽기만 되고 잡이 끝나면 무효)을 건네고, Memora 가 설치본을 다 옮길 때까지 기다린다.
+# 서버는 다 옮기면(아니면 두 시간 뒤) 그 토큰을 지운다.
+#
+# 릴리스 워크플로가 공개 직후에 부르고(workflow_call), 손으로도 돌릴 수 있다(workflow_dispatch — 태그를 비우면
+# 모든 릴리스를 맞춘다).
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: false
+        default: ''
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '기다릴 태그 (비우면 전체)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Memora 에 알리고 옮겨질 때까지 기다리기
+        env:
+          KEY: ${{ secrets.MEMORA_RELEASE_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+          API: https://memo-ora.com/api/downloads/ci
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::warning::MEMORA_RELEASE_KEY 가 없어 다운로드 센터에 알리지 않습니다"
+            exit 0
+          fi
+          body=$(jq -nc --arg t "$GH_TOKEN" --arg g "$TAG" '{github_token: $t, tag: $g}')
+          curl -fsS -X POST "$API" -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' -d "$body"
+          echo
+          # 설치본 하나가 100MB 를 넘고 하나씩 옮긴다. 넉넉히 40분.
+          for i in $(seq 1 120); do
+            sleep 20
+            s=$(curl -fsS -G "$API" --data-urlencode "tag=$TAG" -H "Authorization: Bearer $KEY" || echo '{}')
+            echo "$s" | jq -c '{ready, failed, files: [.files[]? | "\(.name)=\(.status)"]}' 2>/dev/null || echo "$s"
+            if [ "$(echo "$s" | jq -r '.ready // false')" = "true" ]; then echo "다운로드 센터에 올라갔습니다"; exit 0; fi
+            if [ "$(echo "$s" | jq -r '.failed // false')" = "true" ]; then echo "::error::옮기지 못한 설치본이 있습니다"; exit 1; fi
+          done
+          echo "::error::시간 안에 다 옮기지 못했습니다"
+          exit 1

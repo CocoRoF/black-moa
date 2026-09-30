@@ -1,0 +1,14 @@
+# Local development helpers: only postgres (backend/frontend run on the host with hot reload)
+name: memora-dev
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: memora-dev-pg
+    environment:
+      POSTGRES_DB: memora
+      POSTGRES_USER: memora
+      POSTGRES_PASSWORD: memora
+    ports: ["127.0.0.1:55432:5432"]
+    volumes: [memora-dev-pgdata:/var/lib/postgresql/data]
+volumes:
+  memora-dev-pgdata:
