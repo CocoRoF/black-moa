@@ -132,7 +132,7 @@ function SourceCard({ s }: { s: CalendarSource }) {
                 checked={!!s.write} disabled={patch.isPending || locked(s.write, s.write_granted)} onChange={(v) => patch.mutate({ write: v })} />
             </div>
             <p className="text-xs text-muted-fg">
-              {t("sync.disconnect_where")} <Link href="/app/integrations" className="font-medium text-accent hover:underline">{t("sync.disconnect_go")}</Link>
+              {t("sync.disconnect_where")} <Link href="/app/account#connections" className="font-medium text-accent hover:underline">{t("sync.disconnect_go")}</Link>
             </p>
           </>
         )}

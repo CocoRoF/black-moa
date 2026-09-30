@@ -146,7 +146,7 @@ export function CloudView() {
                     : t("cloud.drive_not_connected")}
                 </p>
                 {c.drive.available ? (
-                  <Link href={c.drive.connected ? "/app/files" : "/app/integrations"} className={buttonLook("outline", "sm")}>
+                  <Link href={c.drive.connected ? "/app/files" : "/app/account#connections"} className={buttonLook("outline", "sm")}>
                     {t(c.drive.connected ? "cloud.drive_import" : "cloud.drive_connect")}
                   </Link>
                 ) : null}

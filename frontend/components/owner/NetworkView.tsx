@@ -111,7 +111,7 @@ function SourceSheet({ node, onClose }: { node: NetNode | null; onClose: () => v
     <Sheet open onClose={onClose} side="right" title={name}>
       <div className="space-y-4">
         <p className="text-sm text-muted-fg">{t("net.source_sheet_desc", { name, n: node.attrs?.count ?? 0 })}</p>
-        <Link href="/app/integrations" className={buttonLook("outline", "sm")}>{t("net.source_manage")}</Link>
+        <Link href="/app/account#connections" className={buttonLook("outline", "sm")}>{t("net.source_manage")}</Link>
       </div>
     </Sheet>
   );

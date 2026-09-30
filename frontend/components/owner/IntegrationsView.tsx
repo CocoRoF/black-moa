@@ -10,7 +10,6 @@ import { useLocale, useT } from "@/lib/i18n";
 import { codeMessage, friendlyError } from "@/lib/errors";
 import { fmtRelative } from "@/lib/format";
 import { useAuth } from "@/stores/auth";
-import { Page } from "./Shell";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/input";
@@ -18,13 +17,12 @@ import { SwitchRow } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty";
-import { PageHeader } from "@/components/ui/misc";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { ProviderIcon } from "@/components/integrations/ProviderIcon";
 
-/** 바깥 서비스 연동 (plan/11, plan/59). 관리자가 [연결]에서 켜고 사용자에게 준 기능만 보인다.
- *  `bare` 는 계정 페이지가 "연결" 아래에 이 카드들을 그대로 싣게 하는 것 — 같은 로직을 두 벌 두지 않는다. */
-export function IntegrationsPage({ bare = false }: { bare?: boolean }) {
+/** 바깥 서비스 연결 카드들 (plan/11, plan/59). 관리자가 [연결]에서 켜고 사용자에게 준 기능만 보인다.
+ *  놓이는 곳은 [관리·설정 → 인증 및 연결]의 "연결" 하나다 — 따로 있던 [연동] 페이지는 같은 카드를 한 번 더 보였을 뿐이라 없앴다 (plan/81). */
+export function ConnectionCards() {
   const t = useT(); const locale = useLocale(); const sp = useSearchParams();
   const isAdmin = useAuth((s) => s.user?.role === "admin");
   const q = useQuery({ queryKey: ["integrations"], queryFn: Integrations.list });
@@ -38,7 +36,7 @@ export function IntegrationsPage({ bare = false }: { bare?: boolean }) {
   const conns = q.data?.connections ?? [];
   // 관리자가 꺼 둔 공급자라도 이어 둔 연결은 보여 준다 — 끊을 수는 있어야 한다.
   const orphan = conns.filter((c) => !providers.some((p) => p.id === c.provider));
-  const body = q.isLoading ? <Skeleton className="h-48" /> : (!providers.length && !orphan.length) ? (
+  return q.isLoading ? <Skeleton className="h-48" /> : (!providers.length && !orphan.length) ? (
     <EmptyState icon={<Unplug />} title={t("integ.none_title")} description={t("integ.none_desc")}
       action={isAdmin ? <Link href="/admin/connections" className="text-sm text-accent hover:underline">{t("integ.admin_link")}</Link> : null} />
   ) : (
@@ -47,8 +45,6 @@ export function IntegrationsPage({ bare = false }: { bare?: boolean }) {
       {orphan.map((c) => <ProviderCard key={c.id} provider={{ id: c.provider, label: c.provider_label, capabilities: [] }} conns={[c]} off />)}
     </div>
   );
-  if (bare) return body;
-  return <Page><PageHeader title={t("nav.integrations")} description={t("integ.desc")} />{body}</Page>;
 }
 
 function ProviderCard({ provider: p, conns, off = false }: { provider: IntegrationProvider; conns: Connection[]; off?: boolean }) {

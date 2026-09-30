@@ -213,7 +213,9 @@ def link_for(event: str, payload: dict[str, Any]) -> tuple[str, str]:
                 "채용 공고 보기" if payload.get("job_id") else "리뷰 보기")
     if event == "credits_low":
         return "/app/credits", "크레딧 확인하기"
-    if event in ("integration_error", "agent_model_fallback"):
+    if event == "integration_error":
+        return "/app/account#connections", "연결 확인하기"
+    if event == "agent_model_fallback":
         return "/app/agents", "비서 설정 열기"
     if event == "network_link":
         return "/app/network?tab=people", "인맥 열기"
@@ -252,7 +254,7 @@ def render(event: str, payload: dict[str, Any], locale: str = "ko",
         "question_unanswered": ("답하지 못한 질문이 있어요", f"비서 {agent}가 답을 몰라서 넘긴 질문이에요. 답을 알려주면 다음부터는 직접 답해요.", visitor),
         "visitor_new_conversation": ("새 방문자 대화", f"비서 {agent}에게 새 방문자가 찾아왔어요.", ""),
         "credits_low": ("크레딧이 얼마 남지 않았어요", "크레딧이 다 떨어지면 비서가 대화를 멈춰요.", ""),
-        "integration_error": ("연동에 문제가 생겼어요", "연결해 둔 서비스가 응답하지 않아요.", ""),
+        "integration_error": ("연결에 문제가 생겼어요", "연결해 둔 서비스가 응답하지 않아요.", ""),
         "agent_model_fallback": ("비서 모델이 기본 모델로 바뀌었어요", "고른 모델을 쓸 수 없어서 기본 모델로 대화를 이어가고 있어요.", ""),
         "relay_result": (f"{other}와의 대화가 끝났어요", f"비서 {agent}가 {other}와 나눈 대화의 결과예요.", agent),
         "relay_visit": (f"{caller}가 문의하고 갔어요", f"비서 {agent}에게 {caller}가 찾아와 물어본 내용이에요.", caller),

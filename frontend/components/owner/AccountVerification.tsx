@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AtSign, BadgeCheck, IdCard, Mail, ShieldAlert } from "@/components/icons";
@@ -9,7 +10,7 @@ import { useLocale, useT } from "@/lib/i18n";
 import { CODE_LENGTH, normalizeCode } from "@/lib/otp";
 import { useAuth } from "@/stores/auth";
 import { Page } from "./Shell";
-import { IntegrationsPage } from "./IntegrationsView";
+import { ConnectionCards } from "./IntegrationsView";
 import { Section } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
@@ -50,6 +51,14 @@ export function AccountVerificationPage() {
   const mailConfigured = status.data?.mail_configured ?? false;
   const emailDone = user.email_verified;
   const nameDone = user.name_confirmed && name.trim() === user.display_name;
+
+  // 연결은 여기 한 곳이다 (plan/81). 다른 화면의 [연결에서 관리]나 연결을 마치고 돌아왔을 때는 그 칸을 바로 보인다.
+  const sp = useSearchParams();
+  useEffect(() => {
+    if (window.location.hash !== "#connections" && !sp.get("connected") && !sp.get("error")) return;
+    const id = window.setTimeout(() => document.getElementById("connections")?.scrollIntoView({ block: "start", behavior: "smooth" }), 300);
+    return () => window.clearTimeout(id);
+  }, [sp]);
 
   return (
     <Page>
@@ -125,9 +134,14 @@ export function AccountVerificationPage() {
           </div>
         </Section>
 
-        <Section title={t("verify.section_connections")} description={t("verify.section_connections_desc")}>
-          <IntegrationsPage bare />
-        </Section>
+        {/* 연결 카드는 그 자체가 카드라 한 겹 더 싸지 않는다. */}
+        <section id="connections" className="scroll-mt-4 space-y-3 pt-4">
+          <div className="px-1">
+            <h2 className="text-[15px] font-semibold leading-tight">{t("verify.section_connections")}</h2>
+            <p className="mt-1 text-sm text-muted-fg">{t("verify.section_connections_desc")}</p>
+          </div>
+          <ConnectionCards />
+        </section>
       </div>
     </Page>
   );

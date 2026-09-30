@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, BellRing, BookOpen, Bot, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, CircleDollarSign, Cloud, HardDrive, History, Home, Inbox, LogOut, Mail, Menu, MessageSquare, MessagesSquare, MonitorDown, Moon, Network, Newspaper, PenLine, Plug, Settings, ShieldAlert, ShieldCheck, Sun, UserRound, X } from "@/components/icons";
+import { Bell, BellRing, BookOpen, Bot, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, CircleDollarSign, Cloud, HardDrive, History, Home, Inbox, LogOut, Mail, Menu, MessageSquare, MessagesSquare, MonitorDown, Moon, Network, Newspaper, PenLine, Settings, ShieldAlert, ShieldCheck, Sun, UserRound, X } from "@/components/icons";
 import { LocaleProvider, useLocale, useT, type Locale } from "@/lib/i18n";
 import { useRequireAuth } from "@/lib/hooks";
 import { Auth, Credits, Inbox as InboxApi, Users, type InboxItem } from "@/lib/api";
@@ -72,10 +72,8 @@ const NAV: NavEntry[] = [
     { href: "/app/network", key: "nav.network", icon: <Network /> },
   ] },
   { group: "settings", key: "navg.settings", items: [
+    // 인증과 바깥 서비스 연결은 한 곳 — 연결은 이 계정에 잇는 일이라 관리 쪽이고, 가져온 것은 [내 정보]로 간다 (plan/49·81).
     { href: "/app/account", key: "nav.account", icon: <ShieldCheck /> },
-    // 바깥 서비스를 이 계정에 잇는 일이라 관리 쪽이다. 거기서 가져온 것을 내 정보에
-    // 넣는 것은 나중 일이고, 그때는 [내 정보] 에 그 항목이 생긴다 (plan/49).
-    { href: "/app/integrations", key: "nav.integrations", icon: <Plug /> },
     // Memora 의 파일 시스템(파일·지식이 쓰는 공간)을 돌보는 곳 — 쓰는 곳은 [내 정보 → 파일] (plan/78).
     { href: "/app/cloud", key: "nav.cloud", icon: <Cloud /> },
     { href: "/app/credits", key: "nav.credits", icon: <CircleDollarSign /> },

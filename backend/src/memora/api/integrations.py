@@ -100,7 +100,7 @@ async def start_url(db, user: User, provider: str, caps: list[str], next_url: st
     have = [c for c in ((conn.capabilities or []) if conn else []) if c in offered]
     caps_all = list(dict.fromkeys([*have, *want]))
     state, nonce = OST.begin(response, provider=provider, purpose="connect", uid=str(user.id), caps=caps_all,
-                             next=OST.safe_next(next_url, "/app/integrations"))
+                             next=OST.safe_next(next_url, "/app/account"))
     return await p.authorize_url(db, purpose="connect", scopes=p.scopes_for(caps_all, login=False), state=state, nonce=nonce,
                                  locale=user.locale or None)
 
@@ -122,12 +122,12 @@ async def connect_callback(provider: str, request: Request, db: DB, code: str | 
         return r
 
     if p is None:
-        return to("/app/integrations", error="provider_unknown")
+        return to("/app/account", error="provider_unknown")
     try:
         st = OST.finish(state or "", memora_oauth, provider=provider)
     except Unauthorized as e:
-        return to("/app/integrations", error=e.code)
-    back = OST.safe_next(st.get("next"), "/app/integrations")
+        return to("/app/account", error=e.code)
+    back = OST.safe_next(st.get("next"), "/app/account")
     if st.get("purpose") != "connect":
         return to(back, error="bad_state")
     if error or not code:

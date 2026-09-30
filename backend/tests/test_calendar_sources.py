@@ -180,7 +180,7 @@ async def test_coming_back_from_consent_lands_on_the_tab_it_left(client: AsyncCl
         def begin(next_url: str) -> tuple[str, str]:
             resp = Response()
             state, _ = OST.begin(resp, provider="google", purpose="connect", uid=user["id"], caps=["calendar_read"],
-                                 next=OST.safe_next(next_url, "/app/integrations"))
+                                 next=OST.safe_next(next_url, "/app/account"))
             return state, resp.headers["set-cookie"].split(";")[0].split("=", 1)[1]
 
         state, bind = begin("/app/schedule?tab=sync")
@@ -191,9 +191,9 @@ async def test_coming_back_from_consent_lands_on_the_tab_it_left(client: AsyncCl
         state, bind = begin("https://evil.example/x")
         r = await client.get("/api/integrations/google/callback", params={"code": "c", "state": state},
                              cookies={"memora_oauth": bind}, follow_redirects=False)
-        assert r.headers["location"].endswith("/app/integrations?connected=google")
+        assert r.headers["location"].endswith("/app/account?connected=google")
         # 흐름을 시작한 브라우저가 아니면(쿠키가 없거나 다르면) 받지 않는다.
-        state, _ = begin("/app/integrations")
+        state, _ = begin("/app/account")
         r = await client.get("/api/integrations/google/callback", params={"code": "c", "state": state},
                              cookies={"memora_oauth": "someone-else"}, follow_redirects=False)
         assert "error=state_browser_mismatch" in r.headers["location"]

@@ -230,3 +230,10 @@ async def test_a_tool_between_two_sentences_starts_a_new_paragraph_and_visitors_
                                                                          "input_preview": "{\"secret\": 1}"}})
     assert ev["data"] == {"call_id": "c1", "name": "activity", "label": "가능한 시간을 확인하는 중", "label_en": "Checking available times"}
     assert tool_label_en("mcp__memora__meeting_propose") == "Sending the meeting request" and tool_label_en("unknown") == "Checking"
+
+
+def test_a_connection_problem_opens_the_connections():
+    """연결 오류 알림은 연결 칸으로 간다 (plan/81) — 예전엔 [비서 설정 열기]로 엉뚱한 곳을 열었다."""
+    from memora.services.notifications import link_for
+    assert link_for("integration_error", {}) == ("/app/account#connections", "연결 확인하기")
+    assert link_for("agent_model_fallback", {})[0] == "/app/agents"

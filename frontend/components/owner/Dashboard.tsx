@@ -39,7 +39,7 @@ export function Dashboard() {
     { key: "profile", done: Object.keys(profile.data?.data ?? {}).some((k) => !!profile.data?.data[k]) || !!user.onboarding_state?.profile_done, href: "/app/profile" },
     { key: "knowledge", done: (docs.data?.items.length ?? 0) > 0, href: "/app/knowledge" },
     { key: "network", done: (net.data?.nodes ?? 0) > 0, href: "/app/network" },
-    { key: "integrations", done: (integ.data?.connections.length ?? 0) > 0, href: "/app/integrations" },
+    { key: "integrations", done: (integ.data?.connections.length ?? 0) > 0, href: "/app/account#connections" },
     { key: "link", done: links > 0, href: items[0] ? `/app/agents/${items[0].id}/links` : "/app/agents" },
   ];
   const doneCount = checklist.filter((c) => c.done).length;
