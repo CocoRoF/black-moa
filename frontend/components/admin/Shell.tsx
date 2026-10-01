@@ -136,14 +136,14 @@ function Inner({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-dvh overflow-hidden bg-bg">
       <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-card">
-        <div className="flex h-14 items-center gap-2 border-b border-border px-4"><Logo href="/admin" size={30} /><span className="ml-1 rounded-md bg-fg px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-bg">Admin</span></div>
+        <div className="flex h-14 items-center gap-2 border-b border-border px-4"><Logo href="/admin" size={26} /><span className="ml-1 rounded-md bg-fg px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-bg">Admin</span></div>
         <div className="flex-1 overflow-y-auto scrollbar-thin">{rail}</div>
         <div className="border-t border-border p-2"><Link href="/app" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-fg hover:bg-muted"><ArrowLeft className="h-4 w-4" />{t("adm.back_to_app")}</Link><button type="button" onClick={logout} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-fg hover:bg-muted"><LogOut className="h-4 w-4" />{t("auth.logout")}</button></div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="safe-pt flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/90 px-3 md:px-5">
-          <div className="md:hidden flex items-center gap-2"><Logo href="/admin" size={30} /><span className="rounded-md bg-fg px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-bg">Admin</span></div>
+          <div className="md:hidden flex items-center gap-2"><Logo href="/admin" size={26} /><span className="rounded-md bg-fg px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-bg">Admin</span></div>
           <div className="flex-1" />
           {setupPending && !path.startsWith("/admin/setup") ? <Link href="/admin/setup" className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-warning/50 bg-warning/10 px-3 py-1 text-xs text-warning"><Wand2 className="h-3.5 w-3.5" />{t("adm.setup_incomplete")}</Link> : null}
           {ov.data?.default_admin_password_in_use ? <Link href="/app/settings" className="inline-flex items-center gap-1.5 rounded-full border border-danger/50 bg-danger/10 px-3 py-1 text-xs font-medium text-danger"><ShieldAlert className="h-3.5 w-3.5" />{t("adm.default_password")}</Link> : null}

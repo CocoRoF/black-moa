@@ -180,7 +180,7 @@ function ShellInner({ children }: { children: ReactNode }) {
             </button>
           ) : (
             <>
-              <Logo href="/app" size={32} />
+              <Logo href="/app" size={26} />
               <Button variant="ghost" size="icon-sm" onClick={toggleSidebar} aria-label={t("nav.collapse_sidebar")}><ChevronLeft className="h-4 w-4" /></Button>
             </>
           )}
@@ -251,7 +251,7 @@ function ShellInner({ children }: { children: ReactNode }) {
               added a 57th pixel that the sidebar's own h-14 border-b row did not have, and
               the two tops sat one pixel apart. */}
           <div className="flex h-14 items-center gap-2 border-b border-border px-3 md:px-5">
-            <div className="md:hidden"><Logo href="/app" size={32} /></div>
+            <div className="md:hidden"><Logo href="/app" size={28} /></div>
             <div className="flex-1" />
             <Link href="/app/credits" className={cn("inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium tabular-nums", bal?.low ? "border-warning/50 bg-warning/10 text-warning" : "border-border bg-card")}>
               <CircleDollarSign className="h-3.5 w-3.5" />{bal ? fmtCredits(bal.balance) : "…"}<span className="hidden sm:inline text-muted-fg font-normal">{t("credits.unit")}</span>

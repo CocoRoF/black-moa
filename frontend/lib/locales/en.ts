@@ -1,5 +1,5 @@
 export const en: Record<string, string> = {
-  "mkt.landing.eyebrow": "BLACKMOA: AI secretary",
+  "mkt.landing.eyebrow": "BLACK-MOA: AI secretary",
   "mkt.landing.title_first": "Your time,",
   "mkt.landing.title_second": "for what matters.",
   "mkt.landing.description": "Your first secretary, for a day that is already full",

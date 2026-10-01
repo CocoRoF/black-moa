@@ -12,7 +12,7 @@ export const ko: Record<string, string> = {
   // errors (params)
   "err.daily_cap_reached": "오늘 쓸 수 있는 크레딧을 모두 썼어요. 내일 다시 쓸 수 있어요.", "err.visitor_daily_cap": "오늘 방문자 대화 한도를 모두 썼어요. 내일 다시 열려요.", "err.insufficient_credits": "크레딧이 부족해요. 충전하거나 다음 지급일을 기다려 주세요.", "err.turn_cap_too_small": "이번 답변에 쓸 크레딧이 부족해요.", "err.google_denied": "Google 로그인이 취소됐어요.", "err.bad_state": "로그인 상태가 만료됐어요. 다시 시도해 주세요.", "err.weak_password": "비밀번호는 8자 이상이어야 해요.", "err.token_invalid": "링크가 만료됐거나 올바르지 않아요.", "err.signup_closed": "지금은 가입을 받지 않아요.", "err.agent_limit": "플랜에서 만들 수 있는 비서 수를 모두 사용했어요.",
   // marketing
-  "mkt.landing.eyebrow": "BLACKMOA: AI 비서",
+  "mkt.landing.eyebrow": "BLACK-MOA: AI 비서",
   "mkt.landing.title_first": "당신의 시간은,",
   "mkt.landing.title_second": "더 중요한 곳에.",
   "mkt.landing.description": "바쁜 당신을 위한 첫 번째 비서",
