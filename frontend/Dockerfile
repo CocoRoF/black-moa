@@ -9,6 +9,10 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Pages prerendered at build time (the landing page, robots, sitemap) read the public origin
+# *now*, not when the container starts — without it their og:image says http://localhost:3000.
+ARG PUBLIC_URL=
+ENV PUBLIC_URL=$PUBLIC_URL
 # Next keeps its compiler cache in .next/cache, which the image never ships; without a
 # cache mount every deploy is a cold compile of the whole app.
 RUN --mount=type=cache,target=/app/.next/cache npm run build

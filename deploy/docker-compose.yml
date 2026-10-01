@@ -94,6 +94,11 @@ services:
       BLACKMOA_BOOTSTRAP_TOKEN: ${BLACKMOA_BOOTSTRAP_TOKEN:-}
       BLACKMOA_ENCRYPTION_KEY: ${BLACKMOA_ENCRYPTION_KEY:-}
       BLACKMOA_ENCRYPTION_KEY_PREVIOUS: ${BLACKMOA_ENCRYPTION_KEY_PREVIOUS:-}
+      # The seeded administrator (.env.example). These were documented but never handed to the
+      # container, so a real password set in .env was ignored and the account came up as admin123.
+      BLACKMOA_DEFAULT_ADMIN_ENABLED: ${BLACKMOA_DEFAULT_ADMIN_ENABLED:-true}
+      BLACKMOA_DEFAULT_ADMIN_EMAIL: ${BLACKMOA_DEFAULT_ADMIN_EMAIL:-admin@geny.com}
+      BLACKMOA_DEFAULT_ADMIN_PASSWORD: ${BLACKMOA_DEFAULT_ADMIN_PASSWORD:-admin123}
       BLACKMOA_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-blackmoa}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-blackmoa}
       BLACKMOA_INTERNAL_API_URL: http://127.0.0.1:8000
       BLACKMOA_DATA_DIR: /data
@@ -202,6 +207,8 @@ services:
   frontend:
     build:
       context: ../frontend
+      args:
+        PUBLIC_URL: ${BLACKMOA_PUBLIC_URL:?set BLACKMOA_PUBLIC_URL}
     image: blackmoa-frontend
     container_name: blackmoa-frontend
     cpus: ${BLACKMOA_FRONTEND_CPUS:-1.0}
