@@ -142,7 +142,7 @@ jobs:
           docker compose -p blackmoa up -d postgres backend worker frontend nginx
           healthy=0
           for _ in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:58700/health >/dev/null; then
+            if curl -fsS http://127.0.0.1:58710/health >/dev/null; then
               healthy=1
               break
             fi
@@ -165,7 +165,7 @@ jobs:
       - name: Check the promises the web tier makes
         run: |
           set -eu
-          B=http://127.0.0.1:58700
+          B=http://127.0.0.1:58710
           # A member's address is one address. /p/... is only the inside of the rewrite.
           loc="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' "$B/p/somebody")"
           case "$loc" in

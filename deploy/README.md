@@ -72,7 +72,7 @@ Docker `restart: unless-stopped` still restarts a process that exits.
 sudo docker compose -p blackmoa config -q
 sudo docker compose -p blackmoa up -d --build
 sudo docker compose -p blackmoa ps
-curl -fsS "http://127.0.0.1:${NGINX_PORT:-58700}/health"
+curl -fsS "http://127.0.0.1:${NGINX_PORT:-58710}/health"
 ```
 
 The first start after this hardening release can recursively change ownership of
