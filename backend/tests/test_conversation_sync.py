@@ -17,7 +17,7 @@ from tests.conftest import auth, read_sse, signup
 
 
 def _capture(monkeypatch) -> list[tuple[str, str, dict]]:
-    from memora.core import bus
+    from blackmoa.core import bus
 
     sent: list[tuple[str, str, dict]] = []
 
@@ -53,8 +53,8 @@ async def test_a_turn_is_announced_when_it_starts_and_when_it_ends(client: Async
 
 
 async def test_a_new_question_elsewhere_stops_the_old_answer_and_says_why(client: AsyncClient, monkeypatch):
-    from memora.db.session import session_scope
-    from memora.models import Turn
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Turn
 
     u, tok, a, c = await _setup(client)
     # 다른 화면에서 흐르던 답(작업은 이 프로세스에 없다)
@@ -74,8 +74,8 @@ async def test_a_new_question_elsewhere_stops_the_old_answer_and_says_why(client
 
 
 async def test_stop_reaches_the_answer_whoever_started_it(client: AsyncClient, monkeypatch):
-    from memora.db.session import session_scope
-    from memora.models import Turn
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Turn
 
     u, tok, a, c = await _setup(client)
     r = await client.post(f"/api/agents/{a}/conversations/{c}/cancel", headers=auth(tok))
@@ -103,9 +103,9 @@ async def test_stop_reaches_the_answer_whoever_started_it(client: AsyncClient, m
 
 
 async def test_a_stopped_answer_says_so_on_every_screen(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import Turn
-    from memora.services.conversations import add_message, get_owned
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Turn
+    from blackmoa.services.conversations import add_message, get_owned
 
     u, tok, a, c = await _setup(client)
     async with session_scope() as db:
@@ -133,7 +133,7 @@ async def test_conversation_changes_are_announced(client: AsyncClient, monkeypat
 
 
 def test_a_long_korean_event_stays_whole_json_under_the_byte_limit():
-    from memora.core.bus import MAX_BYTES, encode
+    from blackmoa.core.bus import MAX_BYTES, encode
 
     long = "가나다라마바사아자차" * 1200  # 12000자, 36000바이트
     body = encode(uuid.uuid4(), "room", {"room_id": "r1", "message": {"id": "m1", "body": long}})
@@ -146,8 +146,8 @@ async def test_a_failed_notify_does_not_undo_what_it_announced(app):
     """NOTIFY 가 실패해도(너무 큰 몸통) 알리려던 일은 저장된다 — 세이브포인트 안에서 실패한다."""
     from sqlalchemy import text
 
-    from memora.core import bus
-    from memora.db.session import session_scope
+    from blackmoa.core import bus
+    from blackmoa.db.session import session_scope
 
     async with session_scope() as db:
         await db.execute(text("CREATE TEMP TABLE IF NOT EXISTS _bus_probe (v int)"))
@@ -167,7 +167,7 @@ async def _start_slow(client: AsyncClient, tok: str, a: str, c: str):
     """천천히 흐르는 답을 뒤에서 시작하고, 글이 흐르기 시작할 때까지 기다린다. (turn_id, 끝날 때의 사건들)"""
     import asyncio
 
-    from memora.pipeline.events import journals
+    from blackmoa.pipeline.events import journals
 
     async def run():
         async with client.stream("POST", f"/api/agents/{a}/conversations/{c}/turns", json={"text": "[[slow]] 길게 말해 줘"}, headers=auth(tok)) as r:
@@ -190,7 +190,7 @@ async def test_stop_really_stops_the_model_and_the_next_question_is_answered(cli
     예전에는 모델이 끝까지 돌았고, 그동안 다음 물음이 'already executing a run' 으로 실패했다(운영에서 실제로)."""
     import asyncio
 
-    from memora.providers.llm.fake import FakeSecretaryClient
+    from blackmoa.providers.llm.fake import FakeSecretaryClient
 
     u, tok, a, c = await _setup(client)
     tid, task = await _start_slow(client, tok, a, c)

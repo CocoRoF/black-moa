@@ -19,12 +19,12 @@ async def test_everything_shares_one_manager():
     """The premise. Two engines would make every number below a lie."""
     import pathlib
 
-    from memora.core.database import manager
-    from memora.db.session import engine
+    from blackmoa.core.database import manager
+    from blackmoa.db.session import engine
 
     assert engine is manager.engine
 
-    root = pathlib.Path(__file__).resolve().parents[1] / "src" / "memora"
+    root = pathlib.Path(__file__).resolve().parents[1] / "src" / "blackmoa"
     built = [
         f"{f.relative_to(root)}:{i}"
         for f in root.rglob("*.py")
@@ -38,7 +38,7 @@ async def test_everything_shares_one_manager():
 @_async
 async def test_one_lane_cannot_take_the_whole_pool():
     """Chat must not be able to starve community, an import must not starve chat."""
-    from memora.core.database import LaneBusy, manager
+    from blackmoa.core.database import LaneBusy, manager
 
     _, ceiling = manager._gate.limits("chat", manager.capacity())
     held: list = []
@@ -50,7 +50,7 @@ async def test_one_lane_cannot_take_the_whole_pool():
         assert manager.stats()["lanes"]["chat"]["in_use"] == ceiling
 
         # chat is full: it waits, and is turned away rather than hanging for ever
-        import memora.core.database as D
+        import blackmoa.core.database as D
 
         original, D.LANE_WAIT_S = D.LANE_WAIT_S, 0.2
         try:
@@ -76,7 +76,7 @@ async def test_it_survives_every_connection_being_killed():
     This is not a simulation — the connections are terminated from inside Postgres, exactly
     as a restart, a failover or an administrator would do it.
     """
-    from memora.core.database import manager
+    from blackmoa.core.database import manager
 
     async with manager.session("other", commit=False) as db:
         assert (await db.execute(text("SELECT 1"))).scalar_one() == 1
@@ -101,7 +101,7 @@ async def test_it_survives_every_connection_being_killed():
 @_async
 async def test_a_request_still_works_after_the_database_is_cut(client):
     """The same thing through the front door, which is where it matters."""
-    from memora.core.database import manager
+    from blackmoa.core.database import manager
 
     _, tok = await signup(client, name="끊김")
     assert (await client.get("/api/agents", headers=auth(tok))).status_code == 200
@@ -125,8 +125,8 @@ async def test_a_database_that_is_away_is_a_503_and_then_recovers():
     On its own manager, not the shared one: the supervisor and the event bus are using that
     one, and a test that breaks their connections is testing them too.
     """
-    from memora.config import get_settings
-    from memora.core.database import DatabaseManager, DatabaseUnavailable
+    from blackmoa.config import get_settings
+    from blackmoa.core.database import DatabaseManager, DatabaseUnavailable
 
     mgr = DatabaseManager()
     calls = {"n": 0}
@@ -172,8 +172,8 @@ async def test_releasing_a_session_early_gives_back_the_lane_slot_too():
     """
     from starlette.requests import Request
 
-    from memora.core.database import manager
-    from memora.core.deps import release_db
+    from blackmoa.core.database import manager
+    from blackmoa.core.deps import release_db
 
     before = manager.stats()["lanes"].get("chat", {}).get("in_use", 0)
     async with manager.session("chat", commit=False) as db:
@@ -190,7 +190,7 @@ async def test_releasing_a_session_early_gives_back_the_lane_slot_too():
 async def test_the_manager_rebuilds_itself_and_keeps_working():
     """The last resort has to work: an engine whose pool is wedged recovers by not being
     that engine any more."""
-    from memora.core.database import DatabaseManager
+    from blackmoa.core.database import DatabaseManager
 
     mgr = DatabaseManager()
     try:
@@ -219,11 +219,11 @@ async def test_leasing_an_account_leaves_no_lock_in_the_callers_transaction():
 
     So: after leasing, another session must be able to take that row immediately.
     """
-    from memora.core.database import manager
-    from memora.core.security import encrypt
-    from memora.models import ClaudeAccount
-    from memora.services import claude_pool as CP
-    from memora.services import settings as S
+    from blackmoa.core.database import manager
+    from blackmoa.core.security import encrypt
+    from blackmoa.models import ClaudeAccount
+    from blackmoa.services import claude_pool as CP
+    from blackmoa.services import settings as S
 
     async with manager.session("worker") as db:
         was = await S.get(db, "providers.claude_code.pool.enabled")
@@ -262,7 +262,7 @@ async def test_leasing_an_account_leaves_no_lock_in_the_callers_transaction():
 async def test_a_lane_keeps_its_floor_while_another_sits_on_its_ceiling():
     """plan/32 §3, end to end. The arithmetic is covered by the test below; this one is
     that the manager actually applies it and reports it."""
-    from memora.core.database import manager
+    from blackmoa.core.database import manager
 
     cap = manager.capacity()
     gate = manager._gate
@@ -293,7 +293,7 @@ async def test_a_lane_keeps_its_floor_while_another_sits_on_its_ceiling():
 @_async
 async def test_a_lane_may_not_take_the_slots_another_is_owed():
     """The floor has to be withheld from whoever would otherwise take it."""
-    from memora.core.database import _LaneGate
+    from blackmoa.core.database import _LaneGate
 
     gate = _LaneGate()
     cap = 30
@@ -319,7 +319,7 @@ async def test_a_lane_may_not_take_the_slots_another_is_owed():
 async def test_each_lane_gets_its_own_query_timeout():
     """plan/32 §5. 120s was written for a chat turn whose tools can take minutes; a
     community list query holding a pooled connection that long is a runaway scan."""
-    from memora.core.database import LANE_STATEMENT_TIMEOUT_S, manager
+    from blackmoa.core.database import LANE_STATEMENT_TIMEOUT_S, manager
 
     assert LANE_STATEMENT_TIMEOUT_S["community"] < LANE_STATEMENT_TIMEOUT_S["chat"]
     for lane, expected in (("community", 15.0), ("chat", 120.0), ("worker", 300.0)):

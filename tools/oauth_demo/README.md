@@ -4,7 +4,7 @@ Google 이 민감한 범위(calendar.readonly · calendar.events · contacts.rea
 진짜 Chrome 을 가상 화면에 띄우고 사람처럼 누른다 — 주소창(client ID)까지 찍혀야 해서 페이지만 찍는 녹화로는 안 된다.
 
 - 화면: `Xvfb :77 -screen 0 1920x1080x24`
-- 브라우저: `google-chrome --user-data-dir=~/.memora-demo-chrome --remote-debugging-port=9333 --lang=en-US`
+- 브라우저: `google-chrome --user-data-dir=~/.blackmoa-demo-chrome --remote-debugging-port=9333 --lang=en-US`
   (LANG=en_US.UTF-8). Google 로그인은 이 창에서 한 번 한다. 자동화 표시가 없도록 Playwright 는 `connectOverCDP` 로 붙는다.
 - 누르기·입력: xdotool (실제 입력). 녹화: ffmpeg x11grab.
 - 자막·흐림: `postproc.py` — `captions.json`(장면 설명)과 `blurs.json`(다른 사람의 이름·번호, Drive 파일 목록)을 입힌다.
@@ -14,11 +14,11 @@ Google 이 민감한 범위(calendar.readonly · calendar.events · contacts.rea
 ```bash
 DEMO_PW=... python3 reset_demo.py        # 나와의 대화 지움 · 미팅 요청 보관 · Google 연결 끊기(권한 회수)
 DEMO_PW=... node rec.mjs                 # out/demo-raw.mp4, out/captions.json, out/blurs.json
-python3 postproc.py out/memora-oauth-demo.mp4
+python3 postproc.py out/blackmoa-oauth-demo.mp4
 ```
 
 녹화 뒤 운영 백엔드 컨테이너에서 흔적을 지운다: `cal_clean.py "Meeting with Jamie" …`(Google 캘린더 일정),
-`drive_clean.py --all`(Memora 가 만든·고른 Drive 파일). 데모 계정에 들어온 연락처(`network_nodes.source = 'google_contacts'`)도 지운다.
+`drive_clean.py --all`(black-moa 가 만든·고른 Drive 파일). 데모 계정에 들어온 연락처(`network_nodes.source = 'google_contacts'`)도 지운다.
 
 ## 함정 (2026-09-30 여섯 번 찍으며 겪은 것)
 

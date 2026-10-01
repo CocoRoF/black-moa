@@ -16,10 +16,10 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import AuthIdentity, Connection, User
-from memora.services import oauth as OA
-from memora.services import settings as S
+from blackmoa.db.session import session_scope
+from blackmoa.models import AuthIdentity, Connection, User
+from blackmoa.services import oauth as OA
+from blackmoa.services import settings as S
 from tests.conftest import auth, signup
 
 
@@ -121,7 +121,7 @@ async def test_start_sends_the_browser_to_the_provider_bound_to_it(client: Async
     assert set(q["scope"].split()) == {"openid", "email", "profile"} and q["nonce"] and q["state"]
     # 이 브라우저에만 있는 값(HttpOnly)을 심는다 — 남의 흐름 주소를 밀어 넣는 공격을 막는다.
     cookie = r.headers["set-cookie"]
-    assert "memora_oauth=" in cookie and "HttpOnly" in cookie and "Path=/api" in cookie
+    assert "blackmoa_oauth=" in cookie and "HttpOnly" in cookie and "Path=/api" in cookie
 
     # 카카오: 동의항목은 쉼표로, OIDC 를 켠 앱이면 openid 와 nonce, 이메일을 켠 앱이면 account_email.
     await _provider("kakao", oidc=True, email=True)
@@ -163,7 +163,7 @@ async def test_a_new_verified_account_signs_up_and_comes_back_signed_in(client: 
     seen = _fake(monkeypatch, "google", OA.Identity(provider="google", subject=sub, email=email, email_verified=True, name="구글 사람"))
     start, cb = await _sso(client, "google", next="/app/inbox")
     assert cb.status_code == 302 and _loc(cb) == ("/app/inbox", {"login": "google"})
-    assert "memora_refresh=" in cb.headers.get("set-cookie", "")
+    assert "blackmoa_refresh=" in cb.headers.get("set-cookie", "")
     # nonce 는 시작할 때 만든 것이 신원 확인까지 간다.
     assert seen["nonce"] == parse_qs(urlparse(start.headers["location"]).query)["nonce"][0]
     async with session_scope() as db:
@@ -237,7 +237,7 @@ async def test_an_unverified_or_missing_email_finishes_signup_on_our_page(client
     r = await client.post("/api/auth/sso/complete", json={"token": q["t"], "email": email, "display_name": "닉네임", "agree_terms": True})
     assert r.status_code == 200, r.text
     j = r.json()
-    assert j["access_token"] and j["next"] == "/app/agents" and "memora_refresh=" in r.headers.get("set-cookie", "")
+    assert j["access_token"] and j["next"] == "/app/agents" and "blackmoa_refresh=" in r.headers.get("set-cookie", "")
     async with session_scope() as db:
         u = (await db.execute(select(User).where(User.email == email))).scalars().one()
         # 우리가 받은 이메일은 아직 증명되지 않았다.
@@ -261,7 +261,7 @@ async def test_signup_rules_hold_for_sso_too(client: AsyncClient, monkeypatch):
     # 초대 코드를 넣고 시작하면 된다.
     code = f"INV{uuid.uuid4().hex[:6]}"
     async with session_scope() as db:
-        from memora.models import Invite
+        from blackmoa.models import Invite
         db.add(Invite(code=code, max_uses=1, used=0))
         await db.commit()
     _, cb = await _sso(client, "google", invite=code)
@@ -350,8 +350,8 @@ async def test_the_id_token_is_verified_against_the_providers_keys(monkeypatch):
     import jwt
     from cryptography.hazmat.primitives.asymmetric import rsa
 
-    from memora.core.errors import ValidationFailed
-    from memora.services.oauth import idtoken
+    from blackmoa.core.errors import ValidationFailed
+    from blackmoa.services.oauth import idtoken
 
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     jwk = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(key.public_key()))
@@ -465,8 +465,8 @@ async def test_taking_a_feature_away_turns_it_off_for_everyone(client: AsyncClie
 
 async def test_check_reads_the_providers_answer(client: AsyncClient, monkeypatch):
     """[설정 확인] 은 가짜 코드로 토큰 창구에 묻는다. "그런 코드 없음" 이면 앱 키는 맞은 것이다."""
-    from memora.providers.http import ProviderHTTPError
-    from memora.services.oauth import base
+    from blackmoa.providers.http import ProviderHTTPError
+    from blackmoa.services.oauth import base
 
     tok = await _admin(client)
     answers: list[tuple[int, dict]] = []
@@ -524,7 +524,7 @@ async def _kakao_conn(owner_id: str, caps: list[str]) -> uuid.UUID:
 
 
 async def test_kakao_talk_calendar_is_read_in_31_day_windows(client: AsyncClient, monkeypatch):
-    from memora.services import kakao as K
+    from blackmoa.services import kakao as K
 
     await _provider("kakao")
     user, tok = await signup(client)
@@ -550,7 +550,7 @@ async def test_kakao_talk_calendar_is_read_in_31_day_windows(client: AsyncClient
                           "has_next_events": False})
         return _Resp({"events": [], "has_next_events": False})
 
-    monkeypatch.setattr("memora.services.connections.access_token", fake_token)
+    monkeypatch.setattr("blackmoa.services.connections.access_token", fake_token)
     monkeypatch.setattr(K, "request", fake_request)
     async with session_scope() as db:
         n = await K.sync_calendar(db, await db.get(Connection, cid))
@@ -569,7 +569,7 @@ async def test_kakao_talk_calendar_is_read_in_31_day_windows(client: AsyncClient
 
 
 async def test_kakao_events_snap_to_five_minutes(monkeypatch):
-    from memora.services import kakao as K
+    from blackmoa.services import kakao as K
 
     sent: dict = {}
 
@@ -580,7 +580,7 @@ async def test_kakao_events_snap_to_five_minutes(monkeypatch):
         sent.update({"url": url, **kw})
         return _Resp({"event_id": "kev"})
 
-    monkeypatch.setattr("memora.services.connections.access_token", fake_token)
+    monkeypatch.setattr("blackmoa.services.connections.access_token", fake_token)
     monkeypatch.setattr(K, "request", fake_request)
     s = datetime(2026, 10, 1, 5, 3, tzinfo=UTC)
     r = await K.create_event(None, None, summary="김민수님과의 미팅", start=s, end=s + timedelta(minutes=45), location="강남역")
@@ -591,7 +591,7 @@ async def test_kakao_events_snap_to_five_minutes(monkeypatch):
 
 
 async def test_kakao_talk_as_a_notification_channel(client: AsyncClient, monkeypatch):
-    from memora.services import kakao as K
+    from blackmoa.services import kakao as K
 
     await _provider("kakao")
     user, tok = await signup(client)
@@ -626,7 +626,7 @@ async def test_kakao_talk_as_a_notification_channel(client: AsyncClient, monkeyp
         sent.append({"url": url, **kw})
         return _Resp({"result_code": 0})
 
-    monkeypatch.setattr("memora.services.connections.access_token", fake_token)
+    monkeypatch.setattr("blackmoa.services.connections.access_token", fake_token)
     monkeypatch.setattr(K, "request", fake_request)
     r = await client.post(f"/api/notifications/channels/{ch['id']}/test", headers=auth(tok))
     assert r.status_code == 200, r.text
@@ -635,7 +635,7 @@ async def test_kakao_talk_as_a_notification_channel(client: AsyncClient, monkeyp
     assert tpl["object_type"] == "text" and tpl["link"]["web_url"] == "http://testserver/app/notifications" and len(tpl["text"]) <= 200
 
     # 알림 하나가 그대로 카톡으로 — 여는 곳은 그 알림의 화면이다.
-    from memora.services import notifications as NT
+    from blackmoa.services import notifications as NT
     sent.clear()
     async with session_scope() as db:
         await NT.send_via(db, "kakao", {"connection_id": str(cid)}, subject="[비서] 김민수님의 미팅 요청", text="", html="",
@@ -647,7 +647,7 @@ async def test_kakao_talk_as_a_notification_channel(client: AsyncClient, monkeyp
 
     # 연동을 끊으면 채널도 함께 사라진다.
     async with session_scope() as db:
-        from memora.services import connections as CN
+        from blackmoa.services import connections as CN
         await CN.remove(db, await db.get(Connection, cid))
         await db.commit()
     chans = (await client.get("/api/notifications/channels", headers=auth(tok))).json()["items"]
@@ -655,9 +655,9 @@ async def test_kakao_talk_as_a_notification_channel(client: AsyncClient, monkeyp
 
 
 async def test_disconnecting_kakao_revokes_only_the_data_consent(client: AsyncClient, monkeypatch):
-    from memora.core.security import encrypt
-    from memora.services import connections as CN
-    from memora.services.oauth import kakao as KO
+    from blackmoa.core.security import encrypt
+    from blackmoa.services import connections as CN
+    from blackmoa.services.oauth import kakao as KO
 
     await _provider("kakao")
     user, _ = await signup(client)
@@ -683,8 +683,8 @@ async def test_disconnecting_kakao_revokes_only_the_data_consent(client: AsyncCl
 
 
 async def test_turning_a_provider_off_stops_every_data_path(client: AsyncClient):
-    from memora.core.errors import ServiceUnavailable
-    from memora.services import connections as CN
+    from blackmoa.core.errors import ServiceUnavailable
+    from blackmoa.services import connections as CN
 
     await _provider("kakao")
     user, _ = await signup(client)
@@ -704,7 +704,7 @@ async def test_turning_a_provider_off_stops_every_data_path(client: AsyncClient)
 
 async def test_one_connection_per_provider_and_a_new_account_starts_clean(client: AsyncClient, monkeypatch):
     """같은 계정으로 다시 이으면 권한이 쌓이고, 다른 계정으로 이으면 앞 계정에서 가져온 것은 지운다."""
-    from memora.models import IntegrationEvent
+    from blackmoa.models import IntegrationEvent
 
     await _provider("google")
     user, tok = await signup(client)

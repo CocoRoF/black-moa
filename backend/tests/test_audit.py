@@ -13,7 +13,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select, text
 
-from memora.db.session import session_scope
+from blackmoa.db.session import session_scope
 from tests.conftest import auth, read_sse, signup
 from tests.test_domain import _run_jobs
 
@@ -21,7 +21,7 @@ pytestmark = pytest.mark.asyncio
 
 
 async def _admin_token(client: AsyncClient) -> str:
-    from memora.models import User
+    from blackmoa.models import User
     async with session_scope() as db:
         admin = (await db.execute(select(User).where(User.role == "admin").order_by(User.created_at))).scalars().first()
     if admin is None:
@@ -42,7 +42,7 @@ async def _turn(client: AsyncClient, tok: str, agent_id: str, cid: str, text_: s
 # ── 1. ownership fuzz ────────────────────────────────────────────────
 
 async def test_cross_user_fuzz_every_owner_endpoint(client: AsyncClient):
-    from memora.models import Connection, Fact, InboxItem
+    from blackmoa.models import Connection, Fact, InboxItem
     u1, t1 = await signup(client, name="owner-one")
     u2, t2 = await signup(client, name="intruder")
     a = (await client.post("/api/agents", json={"name": "A1"}, headers=auth(t1))).json()["id"]
@@ -60,7 +60,7 @@ async def test_cross_user_fuzz_every_owner_endpoint(client: AsyncClient):
     png = bytes.fromhex("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c63f8cfc0f01f00050001ff89993d1d0000000049454e44ae426082")
     up = (await client.post("/api/uploads", files={"file": ("a.png", png, "image/png")}, data={"kind": "attachment"}, headers=auth(t1))).json()["upload_id"]
     async with session_scope() as db:
-        from memora.services import network as N
+        from blackmoa.services import network as N
         prop = await N.propose(db, uuid.UUID(u1["id"]), agent_id=None, kind="add_node", payload={"name": "P"})
         pid = str(prop.id)
         item = InboxItem(owner_id=uuid.UUID(u1["id"]), agent_id=uuid.UUID(a), kind="message", payload={"text": "hi"}, status="new")
@@ -139,8 +139,8 @@ async def test_google_callbacks_reject_wrong_state_kind(client: AsyncClient, goo
     """로그인의 state 로 데이터 연동을 마치거나 그 반대로 할 수 없다. 옛 모양의 state·위조한 state 도 받지 않는다."""
     from fastapi import Response
 
-    from memora.core.security import sign_state
-    from memora.services.oauth import state as OST
+    from blackmoa.core.security import sign_state
+    from blackmoa.services.oauth import state as OST
 
     def begin(purpose: str) -> tuple[str, str]:
         resp = Response()
@@ -148,12 +148,12 @@ async def test_google_callbacks_reject_wrong_state_kind(client: AsyncClient, goo
         return st, resp.headers["set-cookie"].split(";")[0].split("=", 1)[1]
 
     data_state, bind = begin("connect")
-    r = await client.get("/api/auth/google/callback", params={"code": "abc", "state": data_state}, cookies={"memora_oauth": bind},
+    r = await client.get("/api/auth/google/callback", params={"code": "abc", "state": data_state}, cookies={"blackmoa_oauth": bind},
                          follow_redirects=False)
     assert r.status_code == 302 and "error=bad_state" in r.headers["location"]
     login_state, bind = begin("login")
     r = await client.get("/api/integrations/google/callback", params={"code": "abc", "state": login_state},
-                         cookies={"memora_oauth": bind}, follow_redirects=False)
+                         cookies={"blackmoa_oauth": bind}, follow_redirects=False)
     assert r.status_code == 302 and "error=bad_state" in r.headers["location"]
     old = sign_state({"kind": "data", "uid": None, "caps": [], "next": "/app"})
     r = await client.get("/api/integrations/google/callback", params={"code": "abc", "state": old}, follow_redirects=False)
@@ -163,9 +163,9 @@ async def test_google_callbacks_reject_wrong_state_kind(client: AsyncClient, goo
 
 
 async def test_email_verification_requires_real_code(client: AsyncClient):
-    from memora.models import Job, User
-    from memora.services import accounts as A
-    from memora.services import settings as S
+    from blackmoa.models import Job, User
+    from blackmoa.services import accounts as A
+    from blackmoa.services import settings as S
     async with session_scope() as db:
         await S.put(db, "signup.require_email_verification", True)
     try:
@@ -206,7 +206,7 @@ async def test_metrics_restricted_to_private_network_or_admin(app, client: Async
 # ── 3. turn pipeline ─────────────────────────────────────────────────
 
 async def test_idempotent_turn_replays_after_journal_eviction(client: AsyncClient):
-    from memora.pipeline.events import journals
+    from blackmoa.pipeline.events import journals
     user, tok = await signup(client)
     a = (await client.post("/api/agents", json={"name": "R"}, headers=auth(tok))).json()["id"]
     c = (await client.post(f"/api/agents/{a}/conversations", json={}, headers=auth(tok))).json()["id"]
@@ -224,8 +224,8 @@ async def test_idempotent_turn_replays_after_journal_eviction(client: AsyncClien
 
 
 async def test_agent_patch_bumps_updated_at_and_runtime_fingerprint(client: AsyncClient):
-    from memora.models import Agent, ModelCatalog, Plan
-    from memora.pipeline.runtime import _fingerprint
+    from blackmoa.models import Agent, ModelCatalog, Plan
+    from blackmoa.pipeline.runtime import _fingerprint
     user, tok = await signup(client)
     a = (await client.post("/api/agents", json={"name": "F"}, headers=auth(tok))).json()
     async with session_scope() as db:
@@ -257,7 +257,7 @@ async def test_attachment_payload_not_persisted_in_messages(client: AsyncClient)
 
 
 async def test_journal_detaches_slow_consumer_and_persists_tail():
-    from memora.pipeline.events import TurnJournal, load_persisted, stream_journal
+    from blackmoa.pipeline.events import TurnJournal, load_persisted, stream_journal
     j = TurnJournal(uuid.uuid4())
     got: list[bytes] = []
 
@@ -291,7 +291,7 @@ async def test_journal_detaches_slow_consumer_and_persists_tail():
 # ── 4. credits ───────────────────────────────────────────────────────
 
 async def test_charge_usage_ledger_kinds(client: AsyncClient):
-    from memora.services import credits as CR
+    from blackmoa.services import credits as CR
     user, tok = await signup(client)
     uid = uuid.UUID(user["id"])
     async with session_scope() as db:
@@ -305,9 +305,9 @@ async def test_charge_usage_ledger_kinds(client: AsyncClient):
 
 
 async def test_monthly_grant_rollover_cap(client: AsyncClient):
-    from memora.models import Plan, User
-    from memora.services import credits as CR
-    from memora.worker.handlers import grant_monthly_for_user, rollover_plan
+    from blackmoa.models import Plan, User
+    from blackmoa.services import credits as CR
+    from blackmoa.worker.handlers import grant_monthly_for_user, rollover_plan
     assert rollover_plan(700, 300) == (100.0, 300.0)   # carry-over capped at 2×monthly → 100 expires
     assert rollover_plan(500, 300) == (0.0, 300.0)
     assert rollover_plan(-40, 300) == (0.0, 300.0)     # debt carries over
@@ -339,8 +339,8 @@ async def test_monthly_grant_rollover_cap(client: AsyncClient):
 # ── 5. worker ────────────────────────────────────────────────────────
 
 async def test_requeue_stale_running_jobs():
-    from memora.models import Job
-    from memora.services import jobs as J
+    from blackmoa.models import Job
+    from blackmoa.services import jobs as J
     async with session_scope() as db:
         j = await J.enqueue(db, "test.stale", {})
         await db.flush()
@@ -353,7 +353,7 @@ async def test_requeue_stale_running_jobs():
 
 
 async def test_retention_sweep_removes_expired_visitor_threads_and_orphans(client: AsyncClient):
-    from memora.models import Conversation, Fact, Message, ToolSpan, Turn, TurnEvent
+    from blackmoa.models import Conversation, Fact, Message, ToolSpan, Turn, TurnEvent
     user, tok = await signup(client)
     a = (await client.post("/api/agents", json={"name": "Ret"}, headers=auth(tok))).json()
     link = (await client.post(f"/api/agents/{a['id']}/links", json={}, headers=auth(tok))).json()
@@ -367,11 +367,11 @@ async def test_retention_sweep_removes_expired_visitor_threads_and_orphans(clien
         conv.last_message_at = datetime.now(UTC) - timedelta(days=200)
         db.add(ToolSpan(turn_id=tid, owner_id=uuid.UUID(user["id"]), name="x", input={}, started_at=datetime.now(UTC)))
         db.add(Fact(owner_id=uuid.UUID(user["id"]), subject="visitor", predicate="likes", object="tea", visibility="visitor_private", visitor_id=conv.visitor_id))
-        from memora.pipeline.events import journals
+        from blackmoa.pipeline.events import journals
         j = journals.get(tid)
         if j:
             await j.wait_flushed()
-    from memora.worker.handlers import retention_sweep
+    from blackmoa.worker.handlers import retention_sweep
     async with session_scope() as db:
         res = await retention_sweep(db, {})
         assert res["conversations_deleted"] >= 1
@@ -385,8 +385,8 @@ async def test_retention_sweep_removes_expired_visitor_threads_and_orphans(clien
 
 
 async def test_integration_sync_persists_expired_status(google_on):
-    from memora.models import Connection, User
-    from memora.worker.handlers import integration_sync
+    from blackmoa.models import Connection, User
+    from blackmoa.worker.handlers import integration_sync
     async with session_scope() as db:
         u = (await db.execute(select(User))).scalars().first()
         conn = Connection(owner_id=u.id, provider="google", account_label=f"exp-{uuid.uuid4().hex[:4]}@g", capabilities=["calendar_read"],
@@ -405,13 +405,13 @@ async def test_integration_sync_persists_expired_status(google_on):
 # ── 6. knowledge ─────────────────────────────────────────────────────
 
 async def test_knowledge_index_failure_paths_and_faq_semantic_match(client: AsyncClient):
-    from memora.models import Job
-    from memora.services import settings as S
+    from blackmoa.models import Job
+    from blackmoa.services import settings as S
     user, tok = await signup(client)
     files = {"file": ("gone.txt", b"this file will vanish", "text/plain")}
     d = (await client.post("/api/knowledge/documents", files=files, data={"kind": "file"}, headers=auth(tok))).json()
     async with session_scope() as db:
-        from memora.models import KnowledgeDocument
+        from blackmoa.models import KnowledgeDocument
         doc = await db.get(KnowledgeDocument, uuid.UUID(d["id"]))
         os.remove(doc.storage_path)
     await _run_jobs(["knowledge.index"])
@@ -433,7 +433,7 @@ async def test_knowledge_index_failure_paths_and_faq_semantic_match(client: Asyn
         assert listing["semantic_search"] is False
         hits = (await client.get("/api/knowledge/search", params={"q": "재택근무"}, headers=auth(tok))).json()["items"]
         assert any("재택근무" in h["text"] for h in hits), hits
-        from memora.services import knowledge as K
+        from blackmoa.services import knowledge as K
         async with session_scope() as db:
             rd = await K.read_document(db, uuid.UUID(user["id"]), uuid.UUID(n["id"]))
             assert "재택근무" in rd["text"]
@@ -455,7 +455,7 @@ async def test_knowledge_index_failure_paths_and_faq_semantic_match(client: Asyn
 # ── 7. network ───────────────────────────────────────────────────────
 
 async def test_network_search_escapes_wildcards_proposal_relation_and_merge_collision(client: AsyncClient):
-    from memora.services import network as N
+    from blackmoa.services import network as N
     user, tok = await signup(client)
     uid = uuid.UUID(user["id"])
     a = (await client.post("/api/network/nodes", json={"name": "김철수"}, headers=auth(tok))).json()["id"]
@@ -474,7 +474,7 @@ async def test_network_search_escapes_wildcards_proposal_relation_and_merge_coll
     r = await client.post(f"/api/network/proposals/{pid}/accept", headers=auth(tok))
     assert r.status_code == 422, r.text
     async with session_scope() as db:
-        from memora.models import NetworkProposal
+        from blackmoa.models import NetworkProposal
         assert (await db.get(NetworkProposal, pid)).status == "obsolete"
     assert (await client.get("/api/network/nodes", params={"q": "박민수"}, headers=auth(tok))).json()["items"] == []
     # merge with colliding edges: a→X knows and b→X knows → one edge survives
@@ -491,8 +491,8 @@ async def test_network_search_escapes_wildcards_proposal_relation_and_merge_coll
 # ── 8. notifications ─────────────────────────────────────────────────
 
 async def test_unsubscribe_footer_and_telegram_secret(client: AsyncClient):
-    from memora.services import notifications as NT
-    from memora.services import settings as S
+    from blackmoa.services import notifications as NT
+    from blackmoa.services import settings as S
     user, tok = await signup(client)
     ch = (await client.get("/api/notifications/channels", headers=auth(tok))).json()["items"][0]
     subject, text_, html = NT.render("visitor_message", {"text": "hi <b>", "agent_name": "x"}, channel_id=uuid.UUID(ch["id"]))
@@ -503,7 +503,7 @@ async def test_unsubscribe_footer_and_telegram_secret(client: AsyncClient):
     chans = (await client.get("/api/notifications/channels", headers=auth(tok))).json()["items"]
     assert next(c for c in chans if c["id"] == ch["id"])["enabled"] is False
     # a file_share token must not unsubscribe anything
-    from memora.core.security import sign_state
+    from blackmoa.core.security import sign_state
     bad = sign_state({"kind": "file_share", "doc": "x", "ch": ch["id"]})
     assert (await client.get(f"/api/notifications/unsubscribe?token={bad}")).status_code == 403
     # telegram: documented derivation + webhook check
@@ -525,7 +525,7 @@ async def test_unsubscribe_footer_and_telegram_secret(client: AsyncClient):
 
 
 async def test_admin_telegram_set_webhook(client: AsyncClient, monkeypatch):
-    from memora.services import settings as S
+    from blackmoa.services import settings as S
     tok = await _admin_token(client)
     async with session_scope() as db:
         await S.put(db, "telegram.bot_token", "")
@@ -545,21 +545,21 @@ async def test_admin_telegram_set_webhook(client: AsyncClient, monkeypatch):
         calls.append({"method": method, "url": url, **kw})
         if url.endswith("/setWebhook"):
             return _R({"ok": True, "description": "Webhook was set"})
-        return _R({"ok": True, "result": {"username": "memora_test_bot"}})
+        return _R({"ok": True, "result": {"username": "blackmoa_test_bot"}})
 
-    import memora.providers.http as H
+    import blackmoa.providers.http as H
     monkeypatch.setattr(H, "request", fake_request)
     async with session_scope() as db:
         await S.put(db, "telegram.bot_token", "999:TOKEN")
     try:
         r = await client.post("/api/admin/telegram/set-webhook", headers=auth(tok))
-        assert r.status_code == 200 and r.json()["ok"] is True and r.json()["bot_username"] == "memora_test_bot"
+        assert r.status_code == 200 and r.json()["ok"] is True and r.json()["bot_username"] == "blackmoa_test_bot"
         sw = next(c for c in calls if c["url"].endswith("/setWebhook"))
         import hashlib
         assert sw["json"]["secret_token"] == hashlib.sha256(b"999:TOKEN").hexdigest()[:32]
         assert sw["json"]["url"] == "http://testserver/api/notifications/telegram/webhook"
         async with session_scope() as db:
-            assert await S.get(db, "telegram.bot_username", use_cache=False) == "memora_test_bot"
+            assert await S.get(db, "telegram.bot_username", use_cache=False) == "blackmoa_test_bot"
     finally:
         async with session_scope() as db:
             await S.put(db, "telegram.bot_token", "")
@@ -581,7 +581,7 @@ async def test_upload_rejects_mime_mismatch_and_sanitizes_filename(client: Async
 # ── 10. admin validation ─────────────────────────────────────────────
 
 async def test_admin_settings_type_validation_and_reindex_trigger(client: AsyncClient):
-    from memora.services import settings as S
+    from blackmoa.services import settings as S
     tok = await _admin_token(client)
     for bad in ({"credits.usd_per_credit": "abc"}, {"credits.usd_per_credit": -1}, {"signup.mode": "weird"}, {"smtp.port": 1.5},
                 {"smtp.use_tls": "maybe"}, {"stripe.price_ids": "x"}, {"embedding.dim": "big"}):
@@ -625,7 +625,7 @@ async def test_admin_plan_and_model_validation(client: AsyncClient):
 
 
 async def test_user_delete_purges_storage_and_last_admin_guard(client: AsyncClient):
-    from memora.config import get_settings
+    from blackmoa.config import get_settings
     user, tok = await signup(client)
     a = (await client.post("/api/agents", json={"name": "Del"}, headers=auth(tok))).json()["id"]
     await client.post("/api/uploads", files={"file": ("n.txt", b"note", "text/plain")}, headers=auth(tok))
@@ -647,8 +647,8 @@ async def test_user_delete_purges_storage_and_last_admin_guard(client: AsyncClie
 async def test_claude_credentials_backup_restore_and_probe_precheck():
     import time
 
-    from memora.services import claude_code as CC
-    from memora.services import settings as S
+    from blackmoa.services import claude_code as CC
+    from blackmoa.services import settings as S
     p = CC.creds_path()
     p.parent.mkdir(parents=True, exist_ok=True)
     if p.exists():
@@ -688,7 +688,7 @@ async def test_claude_credentials_backup_restore_and_probe_precheck():
 # ── 12. memory ───────────────────────────────────────────────────────
 
 async def test_note_store_path_guard(tmp_path):
-    from memora.memory.notes import NoteStore
+    from blackmoa.memory.notes import NoteStore
     ns = NoteStore(tmp_path / "owner")
     other = NoteStore(tmp_path / "visitors")
     n = other.write(title="secret", body="visitor-only")
@@ -701,9 +701,9 @@ async def test_note_store_path_guard(tmp_path):
 
 
 async def test_distill_tolerates_garbage_json(client: AsyncClient, monkeypatch):
-    from memora.memory import distill as D
-    from memora.models import Fact
-    from memora.services import settings as S
+    from blackmoa.memory import distill as D
+    from blackmoa.models import Fact
+    from blackmoa.services import settings as S
     user, tok = await signup(client)
     a = (await client.post("/api/agents", json={"name": "Dst"}, headers=auth(tok))).json()["id"]
     c = (await client.post(f"/api/agents/{a}/conversations", json={}, headers=auth(tok))).json()["id"]
@@ -730,7 +730,7 @@ async def test_distill_tolerates_garbage_json(client: AsyncClient, monkeypatch):
 
 
 async def test_index_cache_open_race_keeps_single_handle(tmp_path):
-    from memora.memory.synapse import IndexCache
+    from blackmoa.memory.synapse import IndexCache
     cache = IndexCache(max_open=10)
     root = tmp_path / "ns"
     a, b = await asyncio.gather(cache.get(root), cache.get(root))

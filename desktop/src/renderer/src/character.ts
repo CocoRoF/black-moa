@@ -25,7 +25,7 @@ const MAX_EDGE = 900;
 /** 투명한지 재는 데만 쓰는 크기. */
 const MEASURE_EDGE = 480;
 
-/** 바이트 → 세울 그림. 실패하면 null(창은 메모라 표식을 세운다). */
+/** 바이트 → 세울 그림. 실패하면 null(창은 블랙모아 표식을 세운다). */
 export async function prepare(bytes: ArrayBuffer): Promise<Prepared | null> {
   try {
     const file = new Blob([bytes]);

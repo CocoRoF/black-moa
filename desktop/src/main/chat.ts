@@ -132,7 +132,7 @@ function refused(e: ApiError): ApiError {
 
 /** 녹음을 글로. 그 비서의 받아쓰기 설정(언어)을 서버가 쓴다. */
 export async function transcribe(agentId: string, audio: ArrayBuffer, mime: string): Promise<{ text: string }> {
-  const boundary = `----memora${Date.now().toString(16)}`;
+  const boundary = `----blackmoa${Date.now().toString(16)}`;
   const head = Buffer.from(
     `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="speech.webm"\r\nContent-Type: ${mime}\r\n\r\n`,
   );
@@ -148,7 +148,7 @@ export async function transcribe(agentId: string, audio: ArrayBuffer, mime: stri
 
 /** 찍은 화면을 올린다(plan/70) — 물음에 붙일 첨부 번호. 대화의 다른 첨부와 같은 길(`/api/uploads`)이다. */
 export async function uploadImage(jpeg: Buffer, filename = 'screen.jpg'): Promise<string> {
-  const boundary = `----memora${Date.now().toString(16)}`;
+  const boundary = `----blackmoa${Date.now().toString(16)}`;
   const parts = [
     Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="kind"\r\n\r\nattachment\r\n`),
     Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: image/jpeg\r\n\r\n`),

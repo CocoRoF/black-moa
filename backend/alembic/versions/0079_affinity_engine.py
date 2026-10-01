@@ -2,7 +2,7 @@
 
 대화 상승분이 사실상 붙지 않던 결함을 고치면서 상태를 둘 더 둔다: 오늘의 셈·기다리는 말(``affinity_state``)과
 증감 기록(``affinity_log``). ``affinity_day`` 는 "오늘 아침 정산을 마친 날" 에서 "정산을 마친 끝난 날" 로
-뜻이 바뀌므로 하루 당긴다 — 정확한 값은 재계산 스크립트(``memora.scripts.recompute_affinity``)가 채운다.
+뜻이 바뀌므로 하루 당긴다 — 정확한 값은 재계산 스크립트(``blackmoa.scripts.recompute_affinity``)가 채운다.
 
 Revision ID: 0079_affinity_engine
 Revises: 0078_special_days

@@ -24,7 +24,7 @@ depends_on = None
 def upgrade() -> None:
     import sqlalchemy as sa
 
-    from memora.services.community import pen_name_for
+    from blackmoa.services.community import pen_name_for
 
     conn = op.get_bind()
     # 알림은 comment_id 만 들고 있다. 거기서 글쓴이로, 글쓴이에서 광장 이름으로 간다.

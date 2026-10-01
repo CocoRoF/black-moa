@@ -12,8 +12,8 @@ from datetime import UTC, datetime
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import Agent, Conversation, KnowledgeFaq, Message, Turn, User
+from blackmoa.db.session import session_scope
+from blackmoa.models import Agent, Conversation, KnowledgeFaq, Message, Turn, User
 from tests.conftest import auth, signup
 
 
@@ -57,8 +57,8 @@ async def test_a_correction_becomes_an_answer_the_secretary_can_find(client: Asy
     assert faqs[0].question == "사무실이 어디예요?" and faqs[0].answer.startswith("판교입니다")
     assert faqs[0].source == "corrected"
     # 외부인이 물은 것을 주인이 고친 답이라, 그 비서는 외부인과의 대화에서도 이 답을 쓴다 (plan/57).
-    from memora.models import Agent
-    from memora.services import outsider as OUT
+    from blackmoa.models import Agent
+    from blackmoa.services import outsider as OUT
     async with session_scope() as db:
         sc = await OUT.scope(db, await db.get(Agent, _uuid.UUID(agent_id)), "knowledge", "stranger")
     assert sc is not None and sc.has_faq(faqs[0].id)

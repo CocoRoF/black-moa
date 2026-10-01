@@ -55,10 +55,10 @@ export function AppFrame({ children }: { children: ReactNode }) {
         })();
       } else if (cmd === "go" && arg && routeFor(arg, door).kind === "stay") {
         router.push(arg);
-        window.setTimeout(() => window.dispatchEvent(new Event("memora:resync")), 0);
+        window.setTimeout(() => window.dispatchEvent(new Event("blackmoa:resync")), 0);
       } else if (cmd === "shown") {
         // 앱이 이 문을 다시 보여 줬다. 그사이 빠른 대화·아바타가 보탠 말을 채운다.
-        window.dispatchEvent(new Event("memora:resync"));
+        window.dispatchEvent(new Event("blackmoa:resync"));
         void qc.invalidateQueries({ queryKey: ["inbox"] });
       } else if (cmd === "messenger") {
         if (arg) useMessenger.getState().openRoom(arg); else useMessenger.getState().show();

@@ -13,8 +13,8 @@ from tests.conftest import auth, signup
 
 
 async def _voice(stt: bool, tts: bool) -> None:
-    from memora.db.session import session_scope
-    from memora.services import settings as S
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import settings as S
     async with session_scope() as db:
         await S.put(db, "stt.enabled", stt)
         await S.put(db, "tts.enabled", tts)
@@ -74,8 +74,8 @@ async def test_an_agent_that_refuses_voice_stays_silent_even_when_the_service_al
 
 
 async def test_the_admin_switch_takes_booleans_only(client: AsyncClient, voice_restored):
-    from memora.api.admin.router import coerce_setting
-    from memora.core.errors import ValidationFailed
+    from blackmoa.api.admin.router import coerce_setting
+    from blackmoa.core.errors import ValidationFailed
 
     assert coerce_setting("stt.enabled", False) is False
     assert coerce_setting("tts.enabled", "true") is True

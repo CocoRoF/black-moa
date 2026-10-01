@@ -18,7 +18,7 @@ import { EmptyState } from "@/components/ui/empty";
 import { StorageBar } from "@/components/storage/StorageBar";
 import { KindIcon, kindLabel } from "@/components/agent/AgentFiles";
 
-/** [관리·설정 → 클라우드 관리] (plan/78) — Memora 의 파일 시스템을 한 장에서 본다.
+/** [관리·설정 → 클라우드 관리] (plan/78) — black-moa 의 파일 시스템을 한 장에서 본다.
  *
  *  [내 정보 → 파일]은 모은 것을 쓰는 곳이고, 여기는 그것이 쓰는 공간을 돌보는 곳이다: 어디에 얼마나 쓰였나,
  *  어디서 들어왔나, 무엇이 큰가, 지운 것은 언제 사라지나(그 전에는 되살린다), Drive 는 이어져 있나. */

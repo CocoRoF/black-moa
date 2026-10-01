@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  *  invent. `if (await confirm({...}))` reads as the sentence it is.
  *
  *  The browser's own `confirm()` would do this in one line and is wrong here: it is modal
- *  to the whole tab, unstyleable, says "memo-ora.com says", and on iOS Safari it can be
+ *  to the whole tab, unstyleable, says "black.memo-ora.com says", and on iOS Safari it can be
  *  suppressed entirely — a question the user never sees, answered `false`.
  */
 export interface ConfirmOptions {

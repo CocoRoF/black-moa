@@ -15,8 +15,8 @@ from __future__ import annotations
 import asyncio
 import uuid
 
-from memora.core import bus
-from memora.db.session import session_scope
+from blackmoa.core import bus
+from blackmoa.db.session import session_scope
 
 
 async def test_a_published_event_reaches_a_subscriber_through_postgres(app):

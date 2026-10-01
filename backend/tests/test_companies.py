@@ -44,7 +44,7 @@ def a_ticker() -> str:
 def test_the_exchange_list_parses_as_the_html_it_actually_is():
     """It is served as `application/vnd.ms-excel` and is an EUC-KR HTML table. A
     spreadsheet reader fails on it; that is the whole trick."""
-    from memora.services.companies.krx import parse
+    from blackmoa.services.companies.krx import parse
 
     rows = parse(payload())
     assert len(rows) > 500, len(rows)
@@ -59,7 +59,7 @@ def test_the_exchange_list_parses_as_the_html_it_actually_is():
 def test_a_truncated_response_is_a_failure_not_an_empty_directory():
     """The exchange sometimes answers with a login page. A 'successful' run that wipes the
     directory down to nine companies is worse than one that fails loudly."""
-    from memora.services.companies.krx import MIN_ROWS, parse
+    from blackmoa.services.companies.krx import MIN_ROWS, parse
 
     head = payload().decode("euc-kr", "replace")
     cut = head[: head.index("</tr>", head.index("</tr>") + 5) + 5] + "</table></body></html>"
@@ -69,7 +69,7 @@ def test_a_truncated_response_is_a_failure_not_an_empty_directory():
 
 def test_source_words_land_in_the_taxonomy_the_community_filters_by():
     """A company and a job posting have to be findable the same way."""
-    from memora.services.companies.taxonomy import industry_codes_for, region_code_for
+    from blackmoa.services.companies.taxonomy import industry_codes_for, region_code_for
 
     assert region_code_for("서울특별시") == ("11", "서울특별시")
     assert region_code_for("서울")[0] == "11"                # sources abbreviate
@@ -85,8 +85,8 @@ def test_source_words_land_in_the_taxonomy_the_community_filters_by():
 @_async
 async def test_one_company_however_its_name_is_written():
     """Three sources write "(주)카카오", "주식회사 카카오" and "카카오". One company."""
-    from memora.db.session import session_scope
-    from memora.services.companies.merge import apply_rows, normalise_name
+    from blackmoa.db.session import session_scope
+    from blackmoa.services.companies.merge import apply_rows, normalise_name
 
     assert normalise_name("(주)카카오") == normalise_name("주식회사 카카오") == normalise_name("카카오")
     code = a_ticker()
@@ -101,7 +101,7 @@ async def test_one_company_however_its_name_is_written():
 
     from sqlalchemy import select
 
-    from memora.models import Company
+    from blackmoa.models import Company
     async with session_scope("worker") as db:
         c = (await db.execute(select(Company).where(Company.stock_code == code))).scalar_one()
         assert c.industry_codes == ["mfg.semi"] and c.region_code == "41"
@@ -113,9 +113,9 @@ async def test_a_correction_by_hand_survives_the_next_collection():
     collector, because the correction stops being worth making."""
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.merge import apply_rows
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.merge import apply_rows
 
     code = a_ticker()
     async with session_scope("worker") as db:
@@ -143,9 +143,9 @@ async def test_a_source_only_writes_what_it_is_authoritative_about():
     address erase the regulator's real one."""
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.merge import apply_rows
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.merge import apply_rows
 
     code = a_ticker()
     async with session_scope("worker") as db:
@@ -166,9 +166,9 @@ async def test_a_source_only_writes_what_it_is_authoritative_about():
 async def test_the_admin_can_see_the_sources_and_queue_a_collection(client: AsyncClient):
     """Queued, not run in the request: the sources are slow and rate-capped, and the
     `crawl` class's ceiling only applies to a job (plan/32 §4)."""
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.worker.__main__ import _class_of
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.worker.__main__ import _class_of
 
     user, tok = await signup(client, f"comp-{_uuid.uuid4().hex[:6]}@example.com")
     async with session_scope() as db:
@@ -189,7 +189,7 @@ async def test_the_admin_can_see_the_sources_and_queue_a_collection(client: Asyn
 def test_companies_incorporated_abroad_are_still_filterable():
     """Two dozen listed companies state a country, not a province. Without a code no
     region filter could reach them; the taxonomy already has 해외·원격 for exactly this."""
-    from memora.services.companies.taxonomy import OVERSEAS_CODE, region_code_for
+    from blackmoa.services.companies.taxonomy import OVERSEAS_CODE, region_code_for
 
     for place in ("홍콩", "미국", "케이맨 제도", "일본", "영국"):
         assert region_code_for(place) == (OVERSEAS_CODE, place), place
@@ -208,10 +208,10 @@ async def test_the_duplicated_rows_do_not_decide_the_region_by_luck():
     """
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.krx import parse
-    from memora.services.companies.merge import apply_rows
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.krx import parse
+    from blackmoa.services.companies.merge import apply_rows
 
     rows = parse(payload())
     by_code: dict[str, list] = {}
@@ -231,7 +231,7 @@ async def test_the_duplicated_rows_do_not_decide_the_region_by_luck():
         c = (await db.execute(select(Company).where(Company.stock_code == code))).scalar_one()
         assert c.region_code, f"{c.name} lost its region to the later row ({c.region_text!r})"
         # and the label agrees with the code rather than being left from the other row
-        from memora.services.companies.taxonomy import region_code_for
+        from blackmoa.services.companies.taxonomy import region_code_for
         assert region_code_for(c.region_text)[0] == c.region_code
 
 
@@ -243,8 +243,8 @@ def test_almost_every_company_in_the_real_list_gets_an_industry_code():
     classification writes "정보 서비스업" where the keyword table said "정보서비스" — plus
     whole categories nobody had thought of (ships, cement, paper, animal feed).
     """
-    from memora.services.companies.krx import parse
-    from memora.services.companies.taxonomy import industry_codes_for
+    from blackmoa.services.companies.krx import parse
+    from blackmoa.services.companies.taxonomy import industry_codes_for
 
     companies = {r["stock_code"]: r for r in parse(payload())}
     coded = sum(1 for r in companies.values() if industry_codes_for(r["industry_text"]))
@@ -270,7 +270,7 @@ def test_the_dart_dictionary_maps_tickers_to_corp_codes():
     import io
     import zipfile
 
-    from memora.services.companies.dart import parse_codes
+    from blackmoa.services.companies.dart import parse_codes
 
     xml = """<?xml version="1.0" encoding="UTF-8"?><result>
       <list><corp_code>00126380</corp_code><corp_name>삼성전자</corp_name><stock_code>005930</stock_code></list>
@@ -297,7 +297,7 @@ def test_the_dart_dictionary_maps_tickers_to_corp_codes():
 def test_dart_company_details_are_taken_apart_correctly():
     import json
 
-    from memora.services.companies.dart import parse_company
+    from blackmoa.services.companies.dart import parse_company
 
     body = {"status": "000", "message": "정상", "corp_name": "주식회사 시험",
             "bizr_no": "123-45-67890", "adres": "서울특별시 강남구 어딘가 1", "phn_no": "02-1234-5678",
@@ -314,7 +314,7 @@ def test_dart_company_details_are_taken_apart_correctly():
 def test_the_tax_office_words_become_a_status():
     import json
 
-    from memora.services.companies.nts import parse
+    from blackmoa.services.companies.nts import parse
 
     body = {"data": [
         {"b_no": "1234567890", "b_stt": "계속사업자"},
@@ -331,8 +331,8 @@ def test_the_tax_office_words_become_a_status():
 async def test_a_source_with_no_key_is_reported_as_that_and_not_as_a_crash(client: AsyncClient):
     """The state a fresh install is actually in. "Needs a key" and "set up and failing" are
     different problems with different fixes, so the screen has to tell them apart."""
-    from memora.db.session import session_scope
-    from memora.services.companies.collect import SOURCES, run, status
+    from blackmoa.db.session import session_scope
+    from blackmoa.services.companies.collect import SOURCES, run, status
 
     for source in ("dart_codes", "dart", "nts"):
         async with session_scope("worker") as db:
@@ -358,9 +358,9 @@ async def test_the_panel_says_what_is_missing_and_which_source_fills_it(client: 
     code cannot be filtered and one with no registration number cannot be checked."""
     from sqlalchemy import func, select
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.collect import coverage
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.collect import coverage
 
     # Both reads from one session: another test creating a company between them is not a
     # bug in the thing being measured.
@@ -392,9 +392,9 @@ async def test_the_panel_says_what_is_missing_and_which_source_fills_it(client: 
 @_async
 async def test_the_daily_pass_skips_sources_that_have_no_key(client: AsyncClient):
     """One slow or unconfigured source must not stop the others, so each is its own job."""
-    from memora.db.session import session_scope
-    from memora.services import settings as S
-    from memora.worker.handlers import HANDLERS
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import settings as S
+    from blackmoa.worker.handlers import HANDLERS
 
     async with session_scope("worker") as db:
         assert (await HANDLERS["companies.refresh"](db, {}))["skipped"], "off by default"
@@ -417,8 +417,8 @@ async def test_the_daily_pass_skips_sources_that_have_no_key(client: AsyncClient
 async def test_a_posting_links_itself_to_the_company_it_names(client: AsyncClient):
     """A posting names its employer as free text. When that text unambiguously matches one
     company, the reader should get the employer's details without leaving the posting."""
-    from memora.db.session import session_scope
-    from memora.services.companies.merge import apply_rows
+    from blackmoa.db.session import session_scope
+    from blackmoa.services.companies.merge import apply_rows
 
     code = a_ticker()
     name = f"연결시험{code}"
@@ -450,8 +450,8 @@ async def test_a_posting_links_itself_to_the_company_it_names(client: AsyncClien
         # region, and a fixture that leaves rows behind is one that breaks its neighbours.
         import uuid as _u
 
-        from memora.db.session import session_scope
-        from memora.models import CommunityJob
+        from blackmoa.db.session import session_scope
+        from blackmoa.models import CommunityJob
         async with session_scope("worker") as db:
             row = await db.get(CommunityJob, _u.UUID(job_id))
             if row is not None:
@@ -462,9 +462,9 @@ async def test_a_posting_links_itself_to_the_company_it_names(client: AsyncClien
 @_async
 async def test_an_ambiguous_name_is_left_unlinked(client: AsyncClient):
     """Attaching a posting to the wrong employer is worse than leaving it unlinked."""
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.merge import apply_rows, normalise_name
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.merge import apply_rows, normalise_name
 
     shared = f"동명이인{a_ticker()}"
     async with session_scope("worker") as db:
@@ -476,7 +476,7 @@ async def test_an_ambiguous_name_is_left_unlinked(client: AsyncClient):
 
     from sqlalchemy import func, select
 
-    from memora.services.companies.query import match_by_name
+    from blackmoa.services.companies.query import match_by_name
     async with session_scope("worker") as db:
         n = (await db.execute(select(func.count()).select_from(Company)
                               .where(Company.name_norm == normalise_name(shared)))).scalar_one()
@@ -489,10 +489,10 @@ async def test_the_directory_hides_what_moderation_hid_but_not_from_the_console(
     """Hiding a company should not be invisible to the person who did it."""
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.merge import apply_rows
-    from memora.services.companies.query import search
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.merge import apply_rows
+    from blackmoa.services.companies.query import search
 
     code = a_ticker()
     name = f"숨김시험{code}"
@@ -513,9 +513,9 @@ async def test_the_directory_hides_what_moderation_hid_but_not_from_the_console(
 
 @_async
 async def test_name_completion_offers_the_company_a_poster_means(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.services.companies.merge import apply_rows
-    from memora.services.companies.query import suggest
+    from blackmoa.db.session import session_scope
+    from blackmoa.services.companies.merge import apply_rows
+    from blackmoa.services.companies.query import suggest
 
     code = a_ticker()
     async with session_scope("worker") as db:
@@ -539,8 +539,8 @@ async def test_every_value_an_operator_must_set_is_settable_from_the_panel(clien
     missing. The deploy-level dials (pool sizes, worker width) are deliberately not here:
     those belong to whoever deploys, not to whoever administers.
     """
-    from memora.db.session import session_scope
-    from memora.services.companies.collect import SOURCES, status
+    from blackmoa.db.session import session_scope
+    from blackmoa.services.companies.collect import SOURCES, status
 
     async with session_scope("worker") as db:
         st = await status(db)
@@ -557,7 +557,7 @@ async def test_every_value_an_operator_must_set_is_settable_from_the_panel(clien
             assert s["where"], f"{s['source']} does not say where to get its key"
 
     # every setting this feature reads is a known setting, so the panel can write it
-    from memora.services.settings import DEFAULTS
+    from blackmoa.services.settings import DEFAULTS
 
     for key in {*needed, "companies.dart_per_run", "companies.auto_collect"}:
         assert key in DEFAULTS, f"{key} is read but not a declared setting"
@@ -571,7 +571,7 @@ def test_a_pasted_portal_key_works_whichever_form_it_is_in():
     인증키" — measured against the live service, not guessed. The portal's own note tells
     you to try both forms, which is as good as saying the caller has to cope.
     """
-    from memora.services.companies.nts import normalise_key
+    from blackmoa.services.companies.nts import normalise_key
 
     decoded = "abc+def/ghi=="
     encoded = "abc%2Bdef%2Fghi%3D%3D"
@@ -589,9 +589,9 @@ async def test_enrichment_spends_its_calls_where_someone_is_reading():
     looks up; the rest can wait. Getting this backwards means the useful rows are filled
     in two months rather than tomorrow.
     """
-    from memora.db.session import session_scope
-    from memora.services.companies.dart import due_for_details
-    from memora.services.companies.merge import apply_rows
+    from blackmoa.db.session import session_scope
+    from blackmoa.services.companies.dart import due_for_details
+    from blackmoa.services.companies.merge import apply_rows
 
     plain, listed = a_ticker(), a_ticker()
     async with session_scope("worker") as db:
@@ -624,9 +624,9 @@ async def test_enrichment_spends_its_calls_where_someone_is_reading():
 async def test_readers_see_a_directory_worth_reading():
     """The dictionary brings ~115,000 unlisted companies that are, to a reader, a name.
     The console still sees them — that is where you go to find out why one is empty."""
-    from memora.db.session import session_scope
-    from memora.services.companies.merge import apply_rows
-    from memora.services.companies.query import search
+    from blackmoa.db.session import session_scope
+    from blackmoa.services.companies.merge import apply_rows
+    from blackmoa.services.companies.query import search
 
     bare = a_ticker()
     name = f"이름만있는회사{bare}"
@@ -659,9 +659,9 @@ async def test_a_source_that_only_knows_an_identifier_can_still_update():
     """
     from sqlalchemy import func, select
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.merge import apply_rows
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.merge import apply_rows
 
     code = a_ticker()
     biz = f"9{code}2345"[:10]
@@ -697,10 +697,10 @@ async def test_the_panel_and_the_directory_agree_on_what_readers_see():
     """
     from sqlalchemy import func, select
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.collect import coverage
-    from memora.services.companies.query import search, substantive
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.collect import coverage
+    from blackmoa.services.companies.query import search, substantive
 
     async with session_scope("worker") as db:
         cov = await coverage(db)
@@ -718,9 +718,9 @@ async def test_one_source_does_not_collect_twice_at_once():
     companies and spend twice the allowance doing it. Observed in production: two `dart`
     jobs running together, each budgeted for the whole day.
     """
-    from memora.db.session import session_scope
-    from memora.models import CompanySourceRun
-    from memora.services.companies.collect import in_flight, run
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import CompanySourceRun
+    from blackmoa.services.companies.collect import in_flight, run
 
     async with session_scope("worker") as db:
         assert await in_flight(db, "dart") is False
@@ -743,10 +743,10 @@ async def test_one_source_does_not_collect_twice_at_once():
 async def test_the_day_s_allowance_is_shared_between_runs():
     """The budget counts what today has already recorded, so the second run of a day takes
     what is left rather than the whole thing again."""
-    from memora.db.session import session_scope
-    from memora.models import CompanySourceRun
-    from memora.services import settings as S
-    from memora.services.companies.collect import dart_budget
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import CompanySourceRun
+    from blackmoa.services import settings as S
+    from blackmoa.services.companies.collect import dart_budget
 
     async with session_scope("worker") as db:
         await S.put(db, "companies.dart_per_run", 1000)
@@ -781,9 +781,9 @@ async def test_a_long_collection_keeps_what_it_has_already_applied():
     spends the quota anyway. Measured in production: the worker's 900-second job timeout
     killed a run after 5,300 DART calls and not one of them had been recorded.
     """
-    import memora.services.companies.collect as C
-    import memora.services.companies.dart as D
-    from memora.db.session import session_scope
+    import blackmoa.services.companies.collect as C
+    import blackmoa.services.companies.dart as D
+    from blackmoa.db.session import session_scope
 
     codes = [a_ticker() for _ in range(6)]
     async with session_scope("worker") as db:
@@ -802,7 +802,7 @@ async def test_a_long_collection_keeps_what_it_has_already_applied():
     class Rec:
         fetched = created = updated = skipped = 0
 
-    from memora.services import settings as S
+    from blackmoa.services import settings as S
 
     orig = (D.fetch_company, D.BATCH, D.GAP_S)
     D.fetch_company, D.BATCH, D.GAP_S = fake_company, 2, 0.0
@@ -826,7 +826,7 @@ async def test_a_long_collection_keeps_what_it_has_already_applied():
 async def test_a_collection_stops_inside_the_job_s_time_budget():
     """The worker kills a job at 900 seconds. A run that ignores that is killed mid-merge;
     stopping early and continuing next time is strictly better."""
-    import memora.services.companies.collect as C
+    import blackmoa.services.companies.collect as C
 
     assert C.RUN_DEADLINE_S < 900, "the deadline must leave the worker room to finish the job"
 
@@ -838,10 +838,10 @@ async def test_the_tax_office_is_asked_about_companies_we_have_not_asked_about()
     none, while thousands stayed unknown."""
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.merge import apply_rows
-    from memora.services.companies.nts import due_for_check
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.merge import apply_rows
+    from blackmoa.services.companies.nts import due_for_check
 
     known, unknown = a_ticker(), a_ticker()
     kb, ub = f"8{known}0"[:10], f"7{unknown}0"[:10]
@@ -865,9 +865,9 @@ async def test_a_restart_does_not_leave_a_collection_running_for_ever():
     """A worker restart kills a collection mid-flight and its row stays open, which reads
     as "still collecting" and blocks the next run through the single-flight guard. Seen
     twice: once from the job timeout, once from a deploy."""
-    from memora.db.session import session_scope
-    from memora.models import CompanySourceRun
-    from memora.services.companies.collect import close_abandoned, in_flight
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import CompanySourceRun
+    from blackmoa.services.companies.collect import close_abandoned, in_flight
 
     async with session_scope("worker") as db:
         db.add(CompanySourceRun(source="nts", started_at=datetime.now(UTC)))
@@ -889,7 +889,7 @@ def test_dart_hands_back_placeholder_registration_numbers_and_we_keep_none():
     several companies the same key and the unique index failed the whole run."""
     import json
 
-    from memora.services.companies.dart import parse_company
+    from blackmoa.services.companies.dart import parse_company
 
     good = parse_company(json.dumps({"status": "000", "corp_name": "정상", "bizr_no": "123-45-67890"}).encode())
     bad = parse_company(json.dumps({"status": "000", "corp_name": "자리표시", "bizr_no": "11940"}).encode())
@@ -900,9 +900,9 @@ def test_dart_hands_back_placeholder_registration_numbers_and_we_keep_none():
 async def test_a_key_another_company_holds_is_kept_out_not_crashed_into():
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.merge import apply_rows
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.merge import apply_rows
 
     biz = f"9{_uuid.uuid4().int % 10**9:09d}"
     a, b = a_ticker(), a_ticker()
@@ -931,9 +931,9 @@ async def test_a_failed_or_cancelled_run_still_closes_its_record(monkeypatch):
 
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import CompanySourceRun
-    from memora.services.companies import collect
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import CompanySourceRun
+    from blackmoa.services.companies import collect
 
     async def boom(db, source, record=None, apply=None, continuation=None):
         raise RuntimeError("duplicate key value violates unique constraint")
@@ -966,10 +966,10 @@ async def test_a_failed_or_cancelled_run_still_closes_its_record(monkeypatch):
 async def test_a_dart_run_that_hits_its_time_budget_queues_its_own_continuation(monkeypatch):
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import Job
-    from memora.services import settings as S
-    from memora.services.companies import collect, dart
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Job
+    from blackmoa.services import settings as S
+    from blackmoa.services.companies import collect, dart
 
     async def due(db, limit):
         return [(f"0000{i:04d}", None) for i in range(3)]
@@ -998,13 +998,13 @@ async def test_the_daily_pass_does_not_start_over_on_every_restart(monkeypatch):
     a development day — used to launch five full collections."""
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import Job
-    from memora.services import jobs as J
-    from memora.services import settings as S
-    from memora.services.companies import collect
-    from memora.worker import __main__ as W
-    from memora.worker.handlers import HANDLERS
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Job
+    from blackmoa.services import jobs as J
+    from blackmoa.services import settings as S
+    from blackmoa.services.companies import collect
+    from blackmoa.worker import __main__ as W
+    from blackmoa.worker.handlers import HANDLERS
 
     async def instant(db, source, record=None, apply=None, continuation=None):
         return [{"name": f"즉시{a_ticker()}", "stock_code": a_ticker()}]

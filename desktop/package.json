@@ -1,7 +1,7 @@
 {
-  "name": "memora-desktop",
+  "name": "blackmoa-desktop",
   "version": "0.8.10",
-  "description": "Memora — 비서와 대화·소식·커뮤니티를 쓰는 앱, 곁에 뜨는 아바타와 빠른 대화",
+  "description": "black-moa — 비서와 대화·소식·커뮤니티를 쓰는 앱, 곁에 뜨는 아바타와 빠른 대화",
   "author": {
     "name": "CocoRoF",
     "email": "gkfua00@gmail.com"
@@ -9,10 +9,10 @@
   "license": "Apache-2.0",
   "main": "./out/main/index.js",
   "private": true,
-  "homepage": "https://memo-ora.com",
+  "homepage": "https://black.memo-ora.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/CocoRoF/my-first-secretary-geny.git"
+    "url": "https://github.com/CocoRoF/black-moa.git"
   },
   "scripts": {
     "dev": "electron-vite dev",
@@ -44,5 +44,5 @@
     "typescript": "^5.7.3",
     "vite": "^6.0.7"
   },
-  "desktopName": "memora.desktop"
+  "desktopName": "blackmoa.desktop"
 }

@@ -14,11 +14,11 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import select, text
 
-from memora.db.session import session_scope
-from memora.models import AuditLog, User
-from memora.services import legal as LEGAL
-from memora.services import oauth as OA
-from memora.services import settings as S
+from blackmoa.db.session import session_scope
+from blackmoa.models import AuditLog, User
+from blackmoa.services import legal as LEGAL
+from blackmoa.services import oauth as OA
+from blackmoa.services import settings as S
 from tests.conftest import auth, signup
 from tests.test_sso import _fake, _provider, _sso
 
@@ -50,18 +50,18 @@ async def test_the_default_documents_fill_what_the_operator_gave_and_drop_the_re
     assert "제7조 (개인정보의 국외 이전)" in d["privacy"] and "Anthropic" in d["privacy"]
     assert d["operator"] == {}
 
-    await _put(**{"legal.company_name": "주식회사 메모라", "legal.ceo_name": "홍길동", "legal.business_no": "123-45-67890",
+    await _put(**{"legal.company_name": "주식회사 블랙모아", "legal.ceo_name": "홍길동", "legal.business_no": "123-45-67890",
                   "legal.email": "help@example.com"})
     d = (await client.get("/api/public/legal")).json()
-    assert "주식회사 메모라" in d["terms"] and "대표자: 홍길동" in d["terms"] and "사업자등록번호: 123-45-67890" in d["privacy"]
+    assert "주식회사 블랙모아" in d["terms"] and "대표자: 홍길동" in d["terms"] and "사업자등록번호: 123-45-67890" in d["privacy"]
     # 개인정보 보호책임자를 따로 정하지 않았으면 대표자가 맡고, 문의처는 대표 이메일.
     assert "성명: 홍길동" in d["privacy"] and "문의: help@example.com" in d["privacy"]
-    assert d["operator"]["company"] == "주식회사 메모라"
+    assert d["operator"]["company"] == "주식회사 블랙모아"
 
     # 관리자가 본문을 넣으면 그것을 쓴다(자리표시는 똑같이 채운다).
     await _put(**{"legal.terms": "# 우리 약관\n{{company}} 의 약관입니다."})
     d = (await client.get("/api/public/legal")).json()
-    assert d["terms"].strip() == "# 우리 약관\n주식회사 메모라 의 약관입니다." and d["custom"]["terms"] is True
+    assert d["terms"].strip() == "# 우리 약관\n주식회사 블랙모아 의 약관입니다." and d["custom"]["terms"] is True
 
 
 async def test_signing_up_needs_the_14_and_terms_agreement_and_records_it(client: AsyncClient):
@@ -142,7 +142,7 @@ async def test_an_account_made_from_the_signup_page_by_google_keeps_the_agreemen
 
 
 async def test_audit_logs_are_kept_a_year(client: AsyncClient):
-    from memora.services import retention
+    from blackmoa.services import retention
 
     user, _ = await signup(client)
     uid = uuid.UUID(user["id"])
@@ -161,7 +161,7 @@ async def test_audit_logs_are_kept_a_year(client: AsyncClient):
 
 
 def test_paid_credits_do_not_expire_under_the_rollover_cap():
-    from memora.worker.handlers import rollover_plan
+    from blackmoa.worker.handlers import rollover_plan
 
     # 무료만: 2×월지급 넘는 만큼 사라진다(예전과 같다).
     assert rollover_plan(700, 300) == (100.0, 300.0)

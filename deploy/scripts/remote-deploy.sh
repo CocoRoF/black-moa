@@ -10,7 +10,7 @@ else
   services=(backend worker frontend)
 fi
 
-sudo docker compose -p memora up -d --build "${services[@]}"
-sudo docker compose -p memora ps
+sudo docker compose -p blackmoa up -d --build "${services[@]}"
+sudo docker compose -p blackmoa ps
 sleep 5
-curl -fsS "http://127.0.0.1:${NGINX_PORT:-58700}/health" && echo
+curl -fsS "http://127.0.0.1:${NGINX_PORT:-58710}/health" && echo

@@ -95,10 +95,10 @@ async def test_people_send_each_other_files_and_they_count_as_messenger(client: 
 
 
 async def test_the_secretary_reads_a_room_only_with_permission(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import Agent, User
-    from memora.pipeline.tools.file_tools import FileRead
-    from memora.pipeline.tools.room_tools import RoomAccessRequest, RoomRead, RoomsFind
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, User
+    from blackmoa.pipeline.tools.file_tools import FileRead
+    from blackmoa.pipeline.tools.room_tools import RoomAccessRequest, RoomRead, RoomsFind
 
     me, mytok, you, yourtok, rid = await _pair(client)
     up = (await client.post("/api/uploads", headers=auth(yourtok), data={"kind": "room"},
@@ -126,8 +126,8 @@ async def test_the_secretary_reads_a_room_only_with_permission(client: AsyncClie
     assert ctx.cards[0]["card_type"] == "room_access"
     # 카드는 비서의 말에 붙는다. 주인이 [이번 대화에서만] 을 누른다.
     async with session_scope() as db:
-        from memora.models import Conversation
-        from memora.services import conversations as CV
+        from blackmoa.models import Conversation
+        from blackmoa.services import conversations as CV
         c = await db.get(Conversation, uuid.UUID(conv["id"]))
         msg = await CV.add_message(db, c, role="assistant", content="읽어도 될까요?", cards=ctx.cards)
         await db.commit()

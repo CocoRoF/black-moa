@@ -7,7 +7,7 @@ import asyncio
 
 import pytest
 
-from memora.services.claude_code import LoginJob, _looks_like_prompt
+from blackmoa.services.claude_code import LoginJob, _looks_like_prompt
 
 pytestmark = pytest.mark.asyncio  # every async test here; the one sync check below is harmless
 
@@ -48,7 +48,7 @@ async def test_login_failure_is_reported_as_an_error_not_a_log():
 
 
 async def test_sending_input_without_a_process_is_a_clean_conflict():
-    from memora.core.errors import Conflict
+    from blackmoa.core.errors import Conflict
     job = LoginJob(["/bin/true"])
     with pytest.raises(Conflict):
         await job.send_input("code")
@@ -67,9 +67,9 @@ async def test_browser_login_is_refused_for_key_based_auth_modes(client, app):
     not a spawned CLI. (The console/subscription choice lives in the auth mode itself.)"""
     import uuid as _uuid
 
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import settings as S
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import settings as S
     from tests.conftest import auth, signup
 
     admin, tok = await signup(client, f"cc-{_uuid.uuid4().hex[:6]}@example.com")
@@ -99,7 +99,7 @@ def test_an_existing_login_is_not_mistaken_for_a_new_one(tmp_path):
     import json
     import time as _time
 
-    from memora.services.claude_code import LoginJob
+    from blackmoa.services.claude_code import LoginJob
 
     cfg = tmp_path / "cfg"
     cfg.mkdir()
@@ -129,7 +129,7 @@ async def test_a_wedged_probe_answers_instead_of_hanging(monkeypatch):
     """
     import asyncio
 
-    from memora.services import claude_code as CC
+    from blackmoa.services import claude_code as CC
 
     class _Wedged:
         def __init__(self, **_kw):

@@ -12,9 +12,9 @@ from datetime import UTC, datetime
 
 from httpx import AsyncClient
 
-from memora.db.session import session_scope
-from memora.models import Agent, NetworkNode, User, Visitor
-from memora.services import people as P
+from blackmoa.db.session import session_scope
+from blackmoa.models import Agent, NetworkNode, User, Visitor
+from blackmoa.services import people as P
 from tests.conftest import auth, signup
 
 
@@ -80,8 +80,8 @@ async def test_connecting_is_one_way_until_it_is_answered(client: AsyncClient):
 
 async def test_only_인맥_counts_as_knowing_somebody(client: AsyncClient):
     """A one-way connection is not a claim about the other person."""
-    from memora.db.session import session_scope
-    from memora.services import people as P
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import people as P
 
     a_user, a_tok = await signup(client)
     b_user, b_tok = await signup(client)
@@ -273,9 +273,9 @@ async def test_a_suggestion_disappears_once_it_is_answered(client: AsyncClient):
 async def test_a_new_contact_goes_nowhere_until_a_secretary_picks_it(client: AsyncClient):
     """인맥에는 공개 범위가 없다 (plan/57). 외부인에게 누구를 쓸지는 비서마다 [지식] 탭에서 고르고,
     새로 넣은 사람은 고르기 전에는 어디에도 나가지 않는다. 나 자신은 고르는 목록에 없다."""
-    from memora.db.session import session_scope
-    from memora.models import Agent
-    from memora.services import outsider as OUT
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent
+    from blackmoa.services import outsider as OUT
 
     _, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "소개꾼"}, headers=auth(tok))).json()
@@ -349,7 +349,7 @@ async def test_photos_is_no_longer_a_profile_field(client: AsyncClient):
 
 async def _propose(owner_id: str, **payload) -> str:
     async with session_scope() as db:
-        from memora.services import network as N
+        from blackmoa.services import network as N
         p = await N.propose(db, _uuid.UUID(owner_id), agent_id=None, kind="add_node", payload=payload, confidence=0.9)
         return str(p.id)
 
@@ -391,7 +391,7 @@ async def test_a_proposal_about_nobody_retires_itself(client: AsyncClient):
     async with session_scope() as db:
         from sqlalchemy import select as _sel
 
-        from memora.models import NetworkProposal
+        from blackmoa.models import NetworkProposal
         rows = (await db.execute(_sel(NetworkProposal).where(NetworkProposal.owner_id == _uuid.UUID(owner["id"])))).scalars().all()
         assert {r.status for r in rows} == {"obsolete"}, "retired, not left pending forever"
     # and the graph never grew a name that was never anybody
@@ -401,8 +401,8 @@ async def test_a_proposal_about_nobody_retires_itself(client: AsyncClient):
 
 async def test_the_secretary_cannot_propose_someone_unreachable(client: AsyncClient):
     """Refused at the source, so the queue never fills in the first place."""
-    from memora.models import Agent, User
-    from memora.pipeline.tools import network_tools as NT
+    from blackmoa.models import Agent, User
+    from blackmoa.pipeline.tools import network_tools as NT
 
     owner, tok = await signup(client)
     async with session_scope() as db:
@@ -494,10 +494,10 @@ async def test_the_secretary_always_sees_my_ledger(client: AsyncClient):
     """
     import uuid as _u
 
-    from memora.db.session import session_scope
-    from memora.models import Agent
-    from memora.models import User as _User
-    from memora.pipeline.tools.base import _allowed, all_tools
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent
+    from blackmoa.models import User as _User
+    from blackmoa.pipeline.tools.base import _allowed, all_tools
 
     user, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "서기"}, headers=auth(tok))).json()
@@ -540,8 +540,8 @@ async def test_field_visibility_has_one_source(client: AsyncClient):
     안 정한 칸을 비서가 정했고, 기본값 표가 둘이라 `location` 이 한쪽은 공개
     한쪽은 비공개여서 **비서를 만든 사람과 안 만든 사람의 기본값이 달랐다.**
     """
-    from memora.models import OwnerProfile
-    from memora.services import profile as PF
+    from blackmoa.models import OwnerProfile
+    from blackmoa.services import profile as PF
 
     prof = OwnerProfile(owner_id=None, data={}, visibility={})
     # 비서가 무슨 말을 해도 칸의 범위는 안 바뀐다. 표에 없는 칸은 비공개다.
@@ -554,17 +554,17 @@ async def test_field_visibility_has_one_source(client: AsyncClient):
     prof.visibility = {"bio": "known"}
     assert PF.field_visibility(prof, loud, "bio") == "known"
     # 기본값 표는 하나뿐이다.
-    from memora.services.agents import DEFAULT_DISCLOSURE
+    from blackmoa.services.agents import DEFAULT_DISCLOSURE
     assert "profile_fields" not in DEFAULT_DISCLOSURE
 
 
 
-async def test_imported_people_hang_off_their_source_and_memora_people_off_me(client):
-    """[나] — [Google 연락처] — [가져온 사람], Memora 인맥은 [나] — [그 사람] (plan/79)."""
+async def test_imported_people_hang_off_their_source_and_blackmoa_people_off_me(client):
+    """[나] — [Google 연락처] — [가져온 사람], black-moa 인맥은 [나] — [그 사람] (plan/79)."""
     import uuid as _uuid
 
-    from memora.db.session import session_scope
-    from memora.models import NetworkNode
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import NetworkNode
 
     user, tok = await signup(client)
     await client.get("/api/network/graph", headers=auth(tok))          # 나 자신이 생긴다
@@ -585,4 +585,4 @@ async def test_imported_people_hang_off_their_source_and_memora_people_off_me(cl
     assert len(imported) == 3 and all(rels.get((hub["id"], n["id"])) == "imported" and n["hops"] == 2 for n in imported)
     assert not any((me, n["id"]) in rels for n in imported)                   # 나에게 바로 붙지 않는다
     mine = next(n for n in g["nodes"] if n["name"] == "직접 적은 사람")
-    assert rels.get((me, mine["id"])) == "network" and mine["hops"] == 1        # Memora 인맥은 바로
+    assert rels.get((me, mine["id"])) == "network" and mine["hops"] == 1        # black-moa 인맥은 바로

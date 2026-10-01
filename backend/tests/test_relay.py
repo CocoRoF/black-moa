@@ -20,8 +20,8 @@ pytestmark = pytest.mark.asyncio
 
 
 async def _settings(**kv):
-    from memora.db.session import session_scope
-    from memora.services import settings as S
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import settings as S
     async with session_scope() as db:
         for k, v in kv.items():
             await S.put(db, k, v)
@@ -49,11 +49,11 @@ async def _pair(client: AsyncClient, *, allow_agents: bool | None = None, agent_
 
 async def _drive(relay_id: str, max_hops: int = 12) -> list[dict]:
     """Play the worker and the API process: claim each queued hop, start its turn, wait for it."""
-    from memora.db.session import session_scope
-    from memora.models import AgentRelay
-    from memora.pipeline.events import journals
-    from memora.services import jobs as J
-    from memora.services import relay as REL
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentRelay
+    from blackmoa.pipeline.events import journals
+    from blackmoa.services import jobs as J
+    from blackmoa.services import relay as REL
     log = []
     for _ in range(max_hops):
         async with session_scope() as db:
@@ -65,7 +65,7 @@ async def _drive(relay_id: str, max_hops: int = 12) -> list[dict]:
             out = await REL.run_hop(db, uuid.UUID(relay_id))
         log.append(out)
         async with session_scope() as db:
-            from memora.models import Job
+            from blackmoa.models import Job
             await J.finish(db, await db.get(Job, jid), result=out)
             r = await db.get(AgentRelay, uuid.UUID(relay_id))
             tid = r.in_flight_turn_id
@@ -110,8 +110,8 @@ async def _assert_transcripts(client, xtok, ytok, a, b, rid):
 
 
 async def _turn_credits(conversation_id: str) -> float:
-    from memora.db.session import session_scope
-    from memora.models import Turn
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Turn
     async with session_scope() as db:
         return float((await db.execute(select(func.coalesce(func.sum(Turn.credits), 0)).where(Turn.conversation_id == uuid.UUID(conversation_id)))).scalar_one() or 0)
 
@@ -119,10 +119,10 @@ async def _turn_credits(conversation_id: str) -> float:
 # ── the rules, one by one ─────────────────────────────────────────────────────
 
 async def test_helpers_read_links_acks_and_redact():
-    from memora.services import relay as REL
-    assert REL.parse_target("https://memo-ora.com/secretary/hrjang-geny") == "hrjang-geny"
+    from blackmoa.services import relay as REL
+    assert REL.parse_target("https://black.memo-ora.com/secretary/hrjang-geny") == "hrjang-geny"
     assert REL.parse_target("  Abc-12 ") == "abc-12"
-    from memora.core.errors import ValidationFailed
+    from blackmoa.core.errors import ValidationFailed
     with pytest.raises(ValidationFailed):
         REL.parse_target("not a link!")
     assert REL.is_ack("감사합니다!") and REL.is_ack("Thanks, bye") and REL.is_ack("네, 알겠습니다.")
@@ -190,20 +190,20 @@ async def test_the_loop_alternates_and_stops_at_the_message_cap(client: AsyncCli
     yi = (await client.get("/api/inbox", headers=auth(ytok))).json()["items"]
     assert any(i["kind"] == "relay_result" and i["payload"]["reason"] == "max_messages" for i in xi)
     assert any(i["kind"] == "relay_visit" and i["payload"]["initiator_agent_name"] == "에이" for i in yi)
-    from memora.db.session import session_scope
-    from memora.models import Visitor
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Visitor
     async with session_scope() as db:
         tv = (await db.execute(select(Visitor).where(Visitor.agent_id == uuid.UUID(b["id"])))).scalars().first()
         assert tv.kind == "agent" and str(tv.peer_agent_id) == a["id"] and tv.display_name.startswith("에이 (")
         # No memory distillation for relay turns: two machines talking is not owner knowledge.
-        from memora.models import Job, Turn
+        from blackmoa.models import Job, Turn
         turn_ids = {str(t) for (t,) in (await db.execute(select(Turn.id).where(Turn.conversation_id.in_([uuid.UUID(xa[0]["id"]), uuid.UUID(yb[0]["id"])])))).all()}
         assert turn_ids, "the relay ran turns"
         distilled = [j for j in (await db.execute(select(Job).where(Job.kind == "memory.distill"))).scalars().all() if str((j.payload or {}).get("turn_id")) in turn_ids]
         assert distilled == []
         # and the prompt block tells each side what this is
-        from memora.models import Agent, AgentRelay, User
-        from memora.services import relay as REL
+        from blackmoa.models import Agent, AgentRelay, User
+        from blackmoa.services import relay as REL
         relay = await db.get(AgentRelay, uuid.UUID(rel["id"]))
         blk = await REL.prompt_block(db, relay.id, relay.target_conversation_id, await db.get(Agent, relay.target_agent_id), await db.get(User, relay.target_owner_id))
         assert "This exchange" in blk and "에이" in blk and "relay_close" in blk and len(blk) < 400
@@ -329,9 +329,9 @@ async def test_an_owner_can_stop_it(client: AsyncClient):
 
 
 async def test_the_sweep_retries_stalls_and_expires_old_ones(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import AgentRelay, Job
-    from memora.services import relay as REL
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentRelay, Job
+    from blackmoa.services import relay as REL
     xtok, a, ytok, b, link = await _pair(client)
     rel = (await client.post(f"/api/agents/{a['id']}/relays", json={"target": link["code"], "message": "안녕하세요", "max_messages": 8}, headers=auth(xtok))).json()
     async with session_scope() as db:
@@ -371,11 +371,11 @@ async def test_stopping_while_a_turn_runs_keeps_what_it_said(client: AsyncClient
     cancelled turn still wrote is kept in the ledger and mirrored to the other side."""
     import asyncio
 
-    from memora.db.session import session_scope
-    from memora.models import AgentRelay
-    from memora.pipeline.events import journals
-    from memora.services import jobs as J
-    from memora.services import relay as REL
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentRelay
+    from blackmoa.pipeline.events import journals
+    from blackmoa.services import jobs as J
+    from blackmoa.services import relay as REL
     xtok, a, ytok, b, link = await _pair(client)
     rel = (await client.post(f"/api/agents/{a['id']}/relays", json={"target": link["code"], "message": "안녕하세요, 잠깐 여쭤볼게요", "max_messages": 8}, headers=auth(xtok))).json()
     async with session_scope() as db:
@@ -426,9 +426,9 @@ async def test_find_then_confirm_then_send(client: AsyncClient):
     assert len(items) == 1 and items[0]["name"] == "배조스완" and items[0]["source"] == "network" and items[0]["reachable"] is True and items[0]["secretary"] == "루나"
     cand = items[0]["candidate_id"]
     # trying to send in the very same turn is refused by the server (not just by the prompt)
-    from memora.db.session import session_scope
-    from memora.models import Agent, RelayCandidate, User
-    from memora.services import relay as REL
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, RelayCandidate, User
+    from blackmoa.services import relay as REL
     async with session_scope() as db:
         c = await db.get(RelayCandidate, uuid.UUID(cand))
         owner = await db.get(User, c.owner_id)
@@ -469,9 +469,9 @@ async def test_find_reports_unreachable_and_directory_only(client: AsyncClient):
     yu, ytok = await _signup(client, name="문정아")
     b = (await client.post("/api/agents", json={"name": "미아"}, headers=auth(ytok))).json()
     link = (await client.post(f"/api/agents/{b['id']}/links", json={"label": "명함"}, headers=auth(ytok))).json()
-    from memora.db.session import session_scope
-    from memora.models import Agent, User
-    from memora.services import relay as REL
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, User
+    from blackmoa.services import relay as REL
     async with session_scope() as db:
         owner = await db.get(User, uuid.UUID(xu["id"]))
         agent = await db.get(Agent, uuid.UUID(a["id"]))
@@ -531,9 +531,9 @@ async def test_find_by_the_public_profile_name(client: AsyncClient):
     await client.post(f"/api/agents/{b['id']}/links", json={"label": "명함"}, headers=auth(ytok))
     r = await client.put("/api/users/me/profile", json={"data": {"preferred_name": "배조스완"}, "visibility": {"preferred_name": "public"}}, headers=auth(ytok))
     assert r.status_code == 200, r.text
-    from memora.db.session import session_scope
-    from memora.models import Agent, User
-    from memora.services import relay as REL
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, User
+    from blackmoa.services import relay as REL
     async with session_scope() as db:
         owner = await db.get(User, uuid.UUID(xu["id"]))
         agent = await db.get(Agent, uuid.UUID(a["id"]))
@@ -558,9 +558,9 @@ async def test_find_by_the_secretarys_own_name(client: AsyncClient):
     _, ytok = await _signup(client, name="아무개")
     b = (await client.post("/api/agents", json={"name": "오렌지비서"}, headers=auth(ytok))).json()
     await client.post(f"/api/agents/{b['id']}/links", json={"label": "명함"}, headers=auth(ytok))
-    from memora.db.session import session_scope
-    from memora.models import Agent, User
-    from memora.services import relay as REL
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, User
+    from blackmoa.services import relay as REL
     async with session_scope() as db:
         owner = await db.get(User, uuid.UUID(xu["id"]))
         agent = await db.get(Agent, uuid.UUID(a["id"]))

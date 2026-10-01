@@ -6,17 +6,17 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
-const BASE = process.env.PUBLIC_URL || process.env.MEMORA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+const BASE = process.env.PUBLIC_URL || process.env.BLACKMOA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),
-  title: { default: "Memora, 나만의 AI 비서", template: "%s · Memora" },
-  description: "당신의 진짜 비서를 만들어보세요. 나를 대신해 답하고, 메시지를 받고, 미팅을 잡아주는 AI 비서 Memora.",
-  applicationName: "Memora",
+  title: { default: "black-moa, 나만의 AI 비서", template: "%s · black-moa" },
+  description: "당신의 진짜 비서를 만들어보세요. 나를 대신해 답하고, 메시지를 받고, 미팅을 잡아주는 AI 비서 black-moa.",
+  applicationName: "black-moa",
   manifest: "/manifest.webmanifest",
   icons: { icon: [{ url: `/favicon.ico?v=${BRAND_REV}`, sizes: "any" }, { url: `/icon.png?v=${BRAND_REV}`, type: "image/png" }], apple: `/icons/apple-touch-icon.png?v=${BRAND_REV}` },
-  appleWebApp: { capable: true, title: "Memora", statusBarStyle: "default" },
-  openGraph: { type: "website", siteName: "Memora", title: "Memora, 나만의 AI 비서", description: "당신의 진짜 비서를 만들어보세요", images: [{ url: BRAND.ogImage, width: 1200, height: 630 }] },
-  twitter: { card: "summary_large_image", title: "Memora, 나만의 AI 비서", images: [BRAND.ogImage] },
+  appleWebApp: { capable: true, title: "black-moa", statusBarStyle: "default" },
+  openGraph: { type: "website", siteName: "black-moa", title: "black-moa, 나만의 AI 비서", description: "당신의 진짜 비서를 만들어보세요", images: [{ url: BRAND.ogImage, width: 1200, height: 630 }] },
+  twitter: { card: "summary_large_image", title: "black-moa, 나만의 AI 비서", images: [BRAND.ogImage] },
   formatDetection: { telephone: false },
 };
 export const viewport: Viewport = {

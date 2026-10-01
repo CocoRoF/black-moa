@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Mascot } from "@/components/brand/Logo";
 
-/** Friendly empty state: the Memora mark with the section icon as a small badge. `plain` hides it. */
+/** Friendly empty state: the black-moa mark with the section icon as a small badge. `plain` hides it. */
 export function EmptyState({ icon, title, description, action, className, plain }: { icon?: ReactNode; title: ReactNode; description?: ReactNode; action?: ReactNode; className?: string; plain?: boolean }) {
   return (
     <div className={cn("flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-border px-6 py-10", className)}>

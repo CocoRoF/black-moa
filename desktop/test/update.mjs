@@ -6,7 +6,7 @@
  */
 import { _electron as electron } from '/home/workspace/.tools/pw/node_modules/playwright-core/index.mjs';
 import { mkdirSync } from 'node:fs';
-const SHOT = process.env.SHOT_DIR ?? '/tmp/memora-shots';
+const SHOT = process.env.SHOT_DIR ?? '/tmp/blackmoa-shots';
 mkdirSync(SHOT, { recursive: true });
 const BIN = new URL('../node_modules/electron/dist/electron', import.meta.url).pathname;
 let bad = 0;
@@ -14,15 +14,15 @@ const say = (ok, what, extra = '') => { if (!ok) bad++; console.log(`${ok ? '  o
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const app = await electron.launch({ executablePath: BIN,
-  args: ['.', '--no-sandbox', '--disable-gpu', `--user-data-dir=${process.env.PROFILE_DIR ?? '/tmp/memora-conn'}`],
-  env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, MEMORA_TEST_HOOKS: '1' } });
+  args: ['.', '--no-sandbox', '--disable-gpu', `--user-data-dir=${process.env.PROFILE_DIR ?? '/tmp/blackmoa-conn'}`],
+  env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, BLACKMOA_TEST_HOOKS: '1' } });
 await app.firstWindow();
 let shell = null;
 for (let i = 0; i < 20 && !shell; i++) { await sleep(1000); shell = app.windows().find((w) => w.url().includes('shell.html')); }
-for (let i = 0; i < 20 && !(await app.evaluate(() => globalThis.__memoraTest.state().signedIn)); i++) await sleep(1000);
-await shell.evaluate(() => window.memora.shell.select('settings'));
+for (let i = 0; i < 20 && !(await app.evaluate(() => globalThis.__blackmoaTest.state().signedIn)); i++) await sleep(1000);
+await shell.evaluate(() => window.blackmoa.shell.select('settings'));
 await sleep(1500);
-const row = () => shell.evaluate(() => [...document.querySelectorAll('p')].find((p) => p.textContent === 'Memora')?.parentElement?.parentElement?.innerText ?? '');
+const row = () => shell.evaluate(() => [...document.querySelectorAll('p')].find((p) => p.textContent === 'black-moa')?.parentElement?.parentElement?.innerText ?? '');
 const btn = shell.getByRole('button', { name: '업데이트 확인' });
 say((await btn.count()) === 1, '[정보] 에 [업데이트 확인] 이 있다');
 
@@ -41,7 +41,7 @@ await sleep(1800);
 const after = await row();
 say(after.includes('새 버전') && (await shell.getByRole('button', { name: '업데이트', exact: true }).count()) === 1, '다시 켜지 않아도 새 판을 알고 [업데이트] 가 나온다', after.replace(/\n/g, ' / '));
 await shell.screenshot({ path: `${SHOT}/update-newer.png` });
-const tray = await app.evaluate(() => globalThis.__memoraTest.state().update);
+const tray = await app.evaluate(() => globalThis.__blackmoaTest.state().update);
 say(tray.newer && tray.checkedAt > 0 && !tray.checking, '상태에 남는다', JSON.stringify({ latest: tray.latest, newer: tray.newer }));
 await app.close();
 console.log(bad ? `\n!! ${bad}건 실패` : '\n모두 정상');

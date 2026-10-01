@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { handle, slug } = await params;
   const data = await fetchPost(handle, slug);
   if (!data) return { robots: { index: false } };
-  const site = process.env.PUBLIC_URL || process.env.MEMORA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL;
+  const site = process.env.PUBLIC_URL || process.env.BLACKMOA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL;
   const url = `/@${data.handle}/${data.post.slug}`;
   const title = `${data.post.title} · ${data.display_name}`;
   return {

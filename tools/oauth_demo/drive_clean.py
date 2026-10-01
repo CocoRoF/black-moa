@@ -1,9 +1,9 @@
 import asyncio, uuid
 from sqlalchemy import select
-from memora.db.session import session_scope
-from memora.models import Connection
-from memora.providers.http import request
-from memora.services import connections as CN
+from blackmoa.db.session import session_scope
+from blackmoa.models import Connection
+from blackmoa.providers.http import request
+from blackmoa.services import connections as CN
 OWNER = uuid.UUID("06abbc3c-4343-75d8-8000-ac12a2c1711a")
 async def main():
     async with session_scope() as db:

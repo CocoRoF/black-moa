@@ -6,10 +6,10 @@ backend-lint:
 frontend-build:
 	cd frontend && npm ci && npm run build
 up:
-	cd deploy && docker compose -p memora up -d --build
+	cd deploy && docker compose -p blackmoa up -d --build
 down:
-	cd deploy && docker compose -p memora down
+	cd deploy && docker compose -p blackmoa down
 logs:
-	cd deploy && docker compose -p memora logs -f --tail 200 backend worker
+	cd deploy && docker compose -p blackmoa logs -f --tail 200 backend worker
 deploy:
 	deploy/scripts/remote-deploy.sh

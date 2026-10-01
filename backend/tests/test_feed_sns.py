@@ -11,8 +11,8 @@ from datetime import UTC, datetime
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import User
+from blackmoa.db.session import session_scope
+from blackmoa.models import User
 from tests.conftest import auth, signup, square_name
 
 
@@ -296,7 +296,7 @@ async def _published_agent(client: AsyncClient, tok: str, name: str) -> dict:
 
 async def test_a_published_secretary_can_be_named_and_is_asked_to_answer(client: AsyncClient):
     """Naming one is asking it to read the post and reply under it."""
-    from memora.models import Job
+    from blackmoa.models import Job
 
     user, tok = await signup(client)
     bot = await _published_agent(client, tok, "서기")
@@ -352,9 +352,9 @@ async def test_a_secretary_nobody_can_reach_is_not_a_mention(client: AsyncClient
 async def test_a_secretarys_reply_is_signed_by_the_secretary(client: AsyncClient):
     """Its owner did not write it. A byline that says they did is a person saying something
     a person never said (plan/43 §6)."""
-    from memora.db.session import session_scope
-    from memora.models import User as _User
-    from memora.services import blog as B
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User as _User
+    from blackmoa.services import blog as B
 
     owner, otok = await signup(client, name="비서주인")
     bot = await _published_agent(client, otok, "제니")
@@ -383,7 +383,7 @@ async def test_an_edit_that_says_nothing_about_names_keeps_them(client: AsyncCli
     Without this, changing a post from 공개 to 인맥 quietly unlinked everybody named in it,
     and a named secretary lost the door its chip pointed at.
     """
-    from memora.models import Job
+    from blackmoa.models import Job
 
     author, atok = await signup(client)
     friend, _ = await signup(client, name="불린이")
@@ -408,7 +408,7 @@ async def test_an_edit_that_says_nothing_about_names_keeps_them(client: AsyncCli
 
 async def test_putting_a_draft_up_summons_the_people_in_it(client: AsyncClient):
     """Nobody was told while it was a draft, so publishing is the first summons."""
-    from memora.models import Job
+    from blackmoa.models import Job
 
     author, atok = await signup(client)
     friend, ftok = await signup(client, name="불린이")
@@ -432,7 +432,7 @@ async def test_a_secretary_behind_an_expired_link_is_not_a_door(client: AsyncCli
     """The picker, the graph and a caption all mean the same thing by reachable."""
     from datetime import UTC, datetime, timedelta
 
-    from memora.models import ShareLink
+    from blackmoa.models import ShareLink
 
     user, tok = await signup(client)
     bot = await _published_agent(client, tok, "서기")
@@ -631,7 +631,7 @@ async def test_somebodys_posts_turn_pages_and_only_show_what_i_may_see(client: A
 
 
 async def test_a_suspended_account_goes_quiet_at_its_own_address_too(client: AsyncClient):
-    from memora.models import User as _U
+    from blackmoa.models import User as _U
 
     them, ttok = await signup(client, name="남세나")
     me, mytok = await signup(client)
@@ -661,8 +661,8 @@ async def test_the_house_has_a_ceiling_nothing_human_reaches(client: AsyncClient
     사람은 1분에 글을 여섯 편 쓰지 않는다. 댓글은 그만큼 빠를 수 있으니 따로 센다.
     광장에만 있던 한도가 내 집에는 없어서, 한 계정이 끝없이 밀어 넣을 수 있었다.
     """
-    import memora.api.blog as A
-    from memora.core.ratelimit import limiter
+    import blackmoa.api.blog as A
+    from blackmoa.core.ratelimit import limiter
 
     assert A.POSTS_PER_MIN < A.COMMENTS_PER_MIN < A.TAPS_PER_MIN
 
@@ -670,7 +670,7 @@ async def test_the_house_has_a_ceiling_nothing_human_reaches(client: AsyncClient
     pid = (await client.post("/api/blog", headers=auth(tok),
                              json={"body": "첫 글", "kind": "note"})).json()["id"]
 
-    monkeypatch.delenv("MEMORA_RATELIMIT_DISABLED", raising=False)
+    monkeypatch.delenv("BLACKMOA_RATELIMIT_DISABLED", raising=False)
     monkeypatch.setattr(A, "POSTS_PER_MIN", 3)
     limiter._buckets.clear()
     seen = [(await client.post("/api/blog", headers=auth(tok),

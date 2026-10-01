@@ -1,19 +1,39 @@
 #!/usr/bin/env bash
-# One-time: add the memora hostname to the existing cloudflared tunnel (hr106) and create the DNS route.
+# One-time: put the black-moa hostname on the host's cloudflared tunnel and point DNS at it.
+#
+#   ./tunnel-add.sh <host> [port] [config] [unit]
+#   e.g. ./tunnel-add.sh black.memo-ora.com 58710 ~/.cloudflared/config.yml cloudflared-memora
+#
+# DNS is a CNAME to <tunnel id>.cfargotunnel.com (proxied). `cloudflared tunnel route dns` only works
+# when the tunnel's cert.pem belongs to the hostname's zone — for any other zone it silently creates
+# "<host>.<cert zone>" instead. So when CF_API_TOKEN (Zone:DNS:Edit) and CF_ZONE_ID are set, the record
+# is made through the API; otherwise the script prints what to create.
 set -euo pipefail
-HOST=${1:-memora.hrletsgo.me}
-PORT=${2:-58700}
-CFG=/etc/cloudflared/config.yml
-if sudo grep -q "hostname: $HOST" $CFG; then echo "ingress already present"; else
-  sudo python3 - "$HOST" "$PORT" "$CFG" <<'PY'
-import sys, re
-host, port, cfg = sys.argv[1], sys.argv[2], sys.argv[3]
+HOST=${1:?host, e.g. black.memo-ora.com}
+PORT=${2:-58710}
+CFG=${3:-$HOME/.cloudflared/config.yml}
+UNIT=${4:-}
+
+if grep -q "hostname: $HOST\$" "$CFG"; then echo "ingress already present"; else
+  python3 - "$HOST" "$PORT" "$CFG" <<'PY'
+import sys
+host, port, cfg = sys.argv[1:4]
 s = open(cfg).read()
 entry = f"  - hostname: {host}\n    service: http://localhost:{port}\n"
-s = s.replace("  - service: http_status:404", entry + "  - service: http_status:404", 1)
-open(cfg, "w").write(s)
+marker = "  - service: http_status:404"
+assert marker in s, "catch-all rule not found"
+open(cfg, "w").write(s.replace(marker, entry + "\n" + marker, 1))
 print("ingress added")
 PY
-  sudo systemctl restart cloudflared
+  [ -n "$UNIT" ] && sudo systemctl restart "$UNIT"
 fi
-cloudflared tunnel route dns hr106 "$HOST" || true
+
+TUNNEL=$(awk '/^tunnel:/ {print $2}' "$CFG")
+TARGET="$TUNNEL.cfargotunnel.com"
+if [ -n "${CF_API_TOKEN:-}" ] && [ -n "${CF_ZONE_ID:-}" ]; then
+  curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records" \
+    -H "Authorization: Bearer $CF_API_TOKEN" -H 'content-type: application/json' \
+    -d "{\"type\":\"CNAME\",\"name\":\"$HOST\",\"content\":\"$TARGET\",\"proxied\":true}" | head -c 300; echo
+else
+  echo "Create DNS: CNAME $HOST -> $TARGET (proxied)"
+fi

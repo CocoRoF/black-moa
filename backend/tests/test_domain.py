@@ -13,9 +13,9 @@ pytestmark = pytest.mark.asyncio
 
 
 async def _run_jobs(kinds: list[str] | None = None, max_jobs: int = 20) -> int:
-    from memora.db.session import session_scope
-    from memora.services import jobs as J
-    from memora.worker.handlers import HANDLERS
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import jobs as J
+    from blackmoa.worker.handlers import HANDLERS
     n = 0
     for _ in range(max_jobs):
         async with session_scope() as db:
@@ -28,7 +28,7 @@ async def _run_jobs(kinds: list[str] | None = None, max_jobs: int = 20) -> int:
                 await J.finish(db, job, result=res if isinstance(res, dict) else {})
             except Exception as e:  # noqa: BLE001
                 await db.rollback()
-                from memora.models import Job
+                from blackmoa.models import Job
                 job = await db.get(Job, jid)
                 await J.fail(db, job, str(e))
         n += 1
@@ -37,7 +37,7 @@ async def _run_jobs(kinds: list[str] | None = None, max_jobs: int = 20) -> int:
 
 async def test_knowledge_ingest_search_and_visibility(client: AsyncClient):
     user, tok = await signup(client)
-    files = {"file": ("faq.md", "# 회사 소개\n\nMemora랩은 개인 비서 AI를 만드는 회사입니다.\n\n## 근무\n\n재택근무를 기본으로 합니다.".encode(), "text/markdown")}
+    files = {"file": ("faq.md", "# 회사 소개\n\nblack-moa랩은 개인 비서 AI를 만드는 회사입니다.\n\n## 근무\n\n재택근무를 기본으로 합니다.".encode(), "text/markdown")}
     r = await client.post("/api/knowledge/documents", files=files, data={"kind": "file"}, headers=auth(tok))
     assert r.status_code == 202, r.text
     doc = r.json()
@@ -48,11 +48,11 @@ async def test_knowledge_ingest_search_and_visibility(client: AsyncClient):
     hits = (await client.get("/api/knowledge/search", params={"q": "재택근무"}, headers=auth(tok))).json()["items"]
     assert hits and "재택" in hits[0]["text"]
     # 외부인에게 무엇을 쓸지는 비서의 [지식] 탭이 정한다 (plan/57). 새 비서는 아무것도 고르지 않았다.
-    from memora.db.session import session_scope
-    from memora.models import Agent
-    from memora.services import knowledge as K
-    from memora.services import outsider as OUT
-    from memora.services.agents import DEFAULT_CAPABILITIES
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent
+    from blackmoa.services import knowledge as K
+    from blackmoa.services import outsider as OUT
+    from blackmoa.services.agents import DEFAULT_CAPABILITIES
     async with session_scope() as db:
         a = Agent(owner_id=uuid.UUID(user["id"]), name="비서", provider="fake", model_id="fake-1",
                   capabilities=dict(DEFAULT_CAPABILITIES), outsider=dict(OUT.DEFAULTS))
@@ -108,9 +108,9 @@ async def test_network_graph_operations_and_visitor_filter(client: AsyncClient):
     assert {n["person"] for n in g["nodes"] if not n["is_self"]} == {"offline"}, "hand-written cards are not people yet"
     st = (await client.get("/api/network/stats", headers=auth(tok))).json()
     assert st["nodes"] == 4 and st["kinds"]["person"] == 3
-    from memora.db.session import session_scope
-    from memora.services import network as N
-    from memora.services.outsider import Scope
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import network as N
+    from blackmoa.services.outsider import Scope
     # 외부인 대화에서는 비서가 고른 사람만 (plan/57) — 여기서는 김철수와 ACME 를 골랐다고 친다.
     picked = Scope(ids=frozenset({uuid.UUID(a["id"]), uuid.UUID(c["id"])}))
     async with session_scope() as db:
@@ -127,7 +127,7 @@ async def test_network_graph_operations_and_visitor_filter(client: AsyncClient):
     # A person the secretary merely heard about resolves to nobody: no account, never talked
     # to this owner. It retires itself instead of becoming a card the owner cannot act on
     # and a name in the graph that was never anybody (plan/31).
-    from memora.db.session import session_scope as ss
+    from blackmoa.db.session import session_scope as ss
     async with ss() as db:
         prop = await N.propose(db, uuid.UUID(user["id"]), agent_id=None, kind="add_node", payload={"kind": "person", "name": "박민수", "attrs": {"company": "Beta"}})
     props = (await client.get("/api/network/proposals", headers=auth(tok))).json()["items"]
@@ -142,9 +142,9 @@ async def test_network_graph_operations_and_visitor_filter(client: AsyncClient):
 
 
 async def test_credit_charge_is_idempotent_and_precheck_blocks(client: AsyncClient):
-    from memora.core.errors import PaymentRequired
-    from memora.db.session import session_scope
-    from memora.services import credits as CR
+    from blackmoa.core.errors import PaymentRequired
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import credits as CR
     user, tok = await signup(client)
     uid = uuid.UUID(user["id"])
     turn_id = uuid.uuid4()
@@ -176,8 +176,8 @@ async def test_notification_rules_and_channel_delivery_path(client: AsyncClient)
     assert any(r["event"] == "visitor_message" for r in rules)
     wh = await client.post("/api/notifications/channels", json={"kind": "webhook", "config": {"url": "http://127.0.0.1:9/x", "secret": "s"}, "label": "hook"}, headers=auth(tok))
     assert wh.status_code == 422
-    from memora.db.session import session_scope
-    from memora.services import notifications as NT
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import notifications as NT
     async with session_scope() as db:
         n = await NT.evaluate(db, owner_id=uuid.UUID(user["id"]), event="visitor_message", payload={"text": "hi", "agent_name": "x"}, urgency=3)
         assert n == 1
@@ -191,8 +191,8 @@ async def test_notification_rules_and_channel_delivery_path(client: AsyncClient)
 
 
 async def test_jobs_claim_dedupe_and_retry():
-    from memora.db.session import session_scope
-    from memora.services import jobs as J
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import jobs as J
     async with session_scope() as db:
         j1 = await J.enqueue(db, "test.noop", {"a": 1}, dedupe_key="dd")
         j2 = await J.enqueue(db, "test.noop", {"a": 2}, dedupe_key="dd")
@@ -211,9 +211,9 @@ async def test_profile_visibility_rendering_and_private_literals(client: AsyncCl
     user, tok = await signup(client)
     await client.put("/api/users/me/profile", json={"data": {"full_name": "홍길동", "title": "대표", "location": "서울 강남구", "contact": {"phone": "010-0000-1111", "email": "gd@x.com"}},
                                                   "visibility": {"location": "private"}}, headers=auth(tok))
-    from memora.db.session import session_scope
-    from memora.services import profile as PF
-    from memora.services.agents import DEFAULT_DISCLOSURE
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import profile as PF
+    from blackmoa.services.agents import DEFAULT_DISCLOSURE
     async with session_scope() as db:
         p = await PF.get(db, uuid.UUID(user["id"]))
         owner_view = PF.render_profile(p, DEFAULT_DISCLOSURE, "owner")
@@ -229,8 +229,8 @@ async def test_profile_visibility_rendering_and_private_literals(client: AsyncCl
 async def test_admin_settings_secrets_masked_and_catalog(client: AsyncClient):
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import User
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
     async with session_scope() as db:
         admin = (await db.execute(select(User).where(User.role == "admin"))).scalars().first()
     r = await client.post("/api/auth/login", json={"email": admin.email, "password": "correct-horse-9"})
@@ -258,7 +258,7 @@ async def test_misc_endpoints(client: AsyncClient):
     convs = (await client.get("/api/conversations", headers=auth(tok))).json()
     assert convs["items"] == []
     m = await client.get("/metrics")
-    assert m.status_code == 200 and "memora_runtime_sessions" in m.text
+    assert m.status_code == 200 and "blackmoa_runtime_sessions" in m.text
     r = await client.post("/api/telemetry/client-error", json={"message": "boom", "url": "/x"})
     assert r.status_code == 202
     assert await _run_jobs(["stats.refresh"]) >= 0
@@ -320,7 +320,7 @@ async def test_agent_copy_follows_renames(client, app):
 
 
 async def test_owner_honorific_is_added_once():
-    from memora.services.agents import honorific
+    from blackmoa.services.agents import honorific
     assert honorific("장하렴") == "장하렴님"
     assert honorific("하렴 사장님") == "하렴 사장님"
     assert honorific("김 선생님") == "김 선생님"
@@ -368,8 +368,8 @@ async def test_base_prompt_is_composed_from_configured_values_only(client, app):
     assert r.status_code in (200, 201, 202), r.text
     from sqlalchemy import select as _select
 
-    from memora.db.session import session_scope
-    from memora.models import KnowledgeDocument
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import KnowledgeDocument
     async with session_scope() as db:
         doc = (await db.execute(_select(KnowledgeDocument).where(KnowledgeDocument.title == "회사 소개"))).scalars().first()
         doc.status = "ready"
@@ -388,9 +388,9 @@ async def test_base_prompt_is_composed_from_configured_values_only(client, app):
 
 async def test_creating_a_secretary_needs_a_verified_email(client, app):
     """Signing up is one step; owning a secretary is where the address has to be real."""
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import settings as S
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import settings as S
     from tests.conftest import auth, signup
     async with session_scope() as db:
         await S.put(db, "signup.verify_before_agent", True)
@@ -436,9 +436,9 @@ async def test_documents_index_without_an_embedding_key(client, app):
     leg instead of failing the document, and keyword search still finds it."""
     from sqlalchemy import select as _select
 
-    from memora.db.session import session_scope
-    from memora.models import KnowledgeChunk
-    from memora.services import settings as S
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import KnowledgeChunk
+    from blackmoa.services import settings as S
     from tests.conftest import auth, signup
 
     user, tok = await signup(client)
@@ -475,9 +475,9 @@ async def test_faq_keyword_fallback_matches_a_differently_worded_question(client
     pattern, which never fires: a visitor never phrases the question the way it was stored."""
     import uuid as _uuid
 
-    from memora.db.session import session_scope
-    from memora.services import knowledge as K
-    from memora.services import settings as S
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import knowledge as K
+    from blackmoa.services import settings as S
     from tests.conftest import auth, signup
 
     user, tok = await signup(client)
@@ -499,7 +499,7 @@ async def test_faq_keyword_fallback_matches_a_differently_worded_question(client
 
 
 async def test_faq_tokens_strip_korean_particles():
-    from memora.services.knowledge import faq_tokens
+    from blackmoa.services.knowledge import faq_tokens
     assert "결제사" in faq_tokens("어떤 결제사를 지원하나요?")
     assert "결제사" in faq_tokens("지원하는 결제사가 어디인가요?")
     assert faq_tokens("어떤 무엇 뭐") == []          # question words alone carry nothing
@@ -510,12 +510,12 @@ async def test_inbox_list_is_advertised_to_the_owner(client, app):
     a message?" every day should not depend on that extra step."""
     import uuid as _uuid
 
-    from memora.db.session import session_scope
-    from memora.models import Agent, User
-    from memora.pipeline.context import TurnContext
-    from memora.pipeline.tools.base import core_overrides_for
-    from memora.services import plans as P
-    from memora.services import profile as PF
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, User
+    from blackmoa.pipeline.context import TurnContext
+    from blackmoa.pipeline.tools.base import core_overrides_for
+    from blackmoa.services import plans as P
+    from blackmoa.services import profile as PF
     from tests.conftest import auth, signup
 
     user, tok = await signup(client)
@@ -539,9 +539,9 @@ async def test_community_counters_survive_concurrent_writers(client, app):
     """
     import asyncio
 
-    from memora.db.session import session_scope
-    from memora.models import CommunityPost
-    from memora.services import community as C
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import CommunityPost
+    from blackmoa.services import community as C
     from tests.conftest import auth, signup
 
     user, tok = await signup(client)
@@ -596,9 +596,9 @@ async def test_community_search_and_notifications(client, app):
     comment reaches the author's inbox without a secretary attached."""
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import InboxItem
-    from memora.services import community as C
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import InboxItem
+    from blackmoa.services import community as C
     from tests.conftest import auth, signup
 
     author, atok = await signup(client)
@@ -646,10 +646,10 @@ async def test_community_writing_needs_a_verified_email(client, app):
     moderation problem, so a post and a comment both ask for a verified address."""
     from datetime import UTC, datetime
 
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import community as C
-    from memora.services import settings as S
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import community as C
+    from blackmoa.services import settings as S
     from tests.conftest import auth, signup
 
     async with session_scope() as db:
@@ -760,9 +760,9 @@ async def test_two_people_never_stand_under_one_square_name(client, app):
     이름이 같았다. 익명 게시판에서 같은 이름 둘은 서로를 사칭하는 것과 같으므로,
     광장에서 입을 열 때 이름을 **받아 적고** 부딪히면 비켜 간다.
     """
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import community as C
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import community as C
     from tests.conftest import auth, signup
 
     author, atok = await signup(client)
@@ -800,10 +800,10 @@ async def test_the_secretary_cannot_see_the_square_through_the_inbox(client, app
     알림은 제목 하나만 읽어도 "내 주인이 광장에 그 글을 썼다" 가 되고, 그 앎이
     언젠가 방문자 앞에서 두 이름을 잇는다.
     """
-    from memora.core.errors import NotFound
-    from memora.db.session import session_scope
-    from memora.services import community as C
-    from memora.services import inbox as I
+    from blackmoa.core.errors import NotFound
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import community as C
+    from blackmoa.services import inbox as I
     from tests.conftest import auth, signup
 
     author, atok = await signup(client)
@@ -887,7 +887,7 @@ async def test_one_place_cannot_open_conversations_without_end(client, app):
                        json={"visitor_settings": {"sessions_per_hour": 0}})
     link2 = (await client.post(f"/api/agents/{other['id']}/links", json={"label": "명함"}, headers=auth(tok2))).json()
 
-    os.environ.pop("MEMORA_RATELIMIT_DISABLED", None)   # 이 검사만 진짜로 센다
+    os.environ.pop("BLACKMOA_RATELIMIT_DISABLED", None)   # 이 검사만 진짜로 센다
     try:
         codes = [(await client.post(f"/api/public/links/{link['code']}/visitor", json={})).status_code
                  for _ in range(3)]
@@ -896,7 +896,7 @@ async def test_one_place_cannot_open_conversations_without_end(client, app):
                   for _ in range(4)]
         assert opened == [200, 200, 200, 200]
     finally:
-        os.environ["MEMORA_RATELIMIT_DISABLED"] = "1"
+        os.environ["BLACKMOA_RATELIMIT_DISABLED"] = "1"
 
 
 async def test_the_trigger_ladder_walks_the_way_it_was_written(client, app):
@@ -905,7 +905,7 @@ async def test_the_trigger_ladder_walks_the_way_it_was_written(client, app):
     말이 없는 사람에게 30일 동안 무엇이 가는지를 엔진에 직접 물어본다. 시뮬레이터가
     규칙을 다시 적으면 거짓말을 하므로, 시뮬레이터도 `decide` 를 그대로 돈다.
     """
-    from memora.services import triggers as TR
+    from blackmoa.services import triggers as TR
 
     cfg = {"enabled": True, "max_per_day": 3, "lapse_after_days": 3,
            "rules": [dict(r) for r in TR.DEFAULT_RULES]}
@@ -936,7 +936,7 @@ async def test_a_pair_that_never_talked_is_never_spoken_to_first(client, app):
     from datetime import UTC, datetime, timedelta
     from types import SimpleNamespace
 
-    from memora.services import triggers as TR
+    from blackmoa.services import triggers as TR
 
     cfg = {"enabled": True, "max_per_day": 3, "lapse_after_days": 3, "rules": [dict(r) for r in TR.DEFAULT_RULES]}
     rel = SimpleNamespace(user_id=uuid.uuid4(), agent_id=uuid.uuid4(), proactive_state={},
@@ -956,9 +956,9 @@ async def test_a_pair_that_never_talked_is_never_spoken_to_first(client, app):
 
 async def test_the_admin_owns_the_trigger_rules(client, app):
     """규칙과 모델은 관리자의 것이다 (plan/54 §1·§2)."""
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import triggers as TR
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import triggers as TR
     from tests.conftest import auth, signup
 
     user, tok = await signup(client)
@@ -989,7 +989,7 @@ async def test_never_saved_rules_are_not_broken_rules(client, app):
     관리 화면이 빨간 줄로 "규칙을 읽지 못했다" 고 말하면, 관리자는 고칠 것이 없는데
     고치려고 들어온다.
     """
-    from memora.services import triggers as TR
+    from blackmoa.services import triggers as TR
 
     assert TR.normalise_rules({}) == TR.DEFAULT_RULES
     assert TR.normalise_rules({"items": []}) == TR.DEFAULT_RULES
@@ -1004,7 +1004,7 @@ async def test_a_sent_trigger_leaves_its_mark_on_the_ladder(client, app):
     from datetime import UTC, datetime, timedelta
     from types import SimpleNamespace
 
-    from memora.services import triggers as TR
+    from blackmoa.services import triggers as TR
 
     cfg = {"enabled": True, "max_per_day": 3, "lapse_after_days": 3, "rules": [dict(r) for r in TR.DEFAULT_RULES]}
     agent, owner = SimpleNamespace(status="active"), SimpleNamespace(status="active")
@@ -1034,10 +1034,10 @@ async def test_a_real_send_walks_the_ladder_and_costs_the_owner_nothing(client, 
 
     from sqlalchemy import select
 
-    from memora.db.session import session_scope
-    from memora.models import AgentRelationship, UsageEvent
-    from memora.services import credits as CR
-    from memora.services import relationship as REL
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentRelationship, UsageEvent
+    from blackmoa.services import credits as CR
+    from blackmoa.services import relationship as REL
     from tests.conftest import auth, signup
 
     user, tok = await signup(client)
@@ -1047,15 +1047,15 @@ async def test_a_real_send_walks_the_ladder_and_costs_the_owner_nothing(client, 
         assert "trigger" not in kw.get("system", ""), "온도는 프롬프트에 들어가되 종류 이름은 아니다"
         return "오늘 하루 어땠어요?", {"input_tokens": 100, "output_tokens": 20}
     monkeypatch.setattr(REL, "complete", fake_complete, raising=False)
-    import memora.providers.llm.simple as SIMPLE
+    import blackmoa.providers.llm.simple as SIMPLE
     monkeypatch.setattr(SIMPLE, "complete", fake_complete)
 
     uid, aid = uuid.UUID(user["id"]), uuid.UUID(a)
     now = datetime.now(UTC)
     async with session_scope() as db:
         # 창을 하루 전체로 열어 둔다. 검사가 시계에 매달리면 밤에만 빨개진다.
-        from memora.services import settings as S
-        from memora.services import triggers as TR
+        from blackmoa.services import settings as S
+        from blackmoa.services import triggers as TR
         rules = [dict(r) for r in TR.DEFAULT_RULES]
         for r in rules:
             r["window"] = [0, 24]
@@ -1101,7 +1101,7 @@ async def test_two_messages_never_land_within_the_floor(client, app):
     from datetime import UTC, datetime, timedelta
     from types import SimpleNamespace
 
-    from memora.services import triggers as TR
+    from blackmoa.services import triggers as TR
 
     cfg = {"enabled": True, "max_per_day": 3, "lapse_after_days": 3, "min_gap_minutes": 120,
            "rules": [dict(r) for r in TR.DEFAULT_RULES]}
@@ -1128,9 +1128,9 @@ async def test_a_failed_turn_records_the_real_reason(client, app, monkeypatch):
     "무엇 때문에 실패했나" 를 적는 자리라, 진짜 원인(금고 폴더 권한)이 통째로
     덮였다. 마무리는 **자기 세션에서 다시 읽는다.**
     """
-    from memora.db.session import session_scope
-    from memora.models import Turn
-    from memora.pipeline import runner as R
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Turn
+    from blackmoa.pipeline import runner as R
     from tests.conftest import auth, read_sse, signup
 
     _, tok = await signup(client)
@@ -1162,7 +1162,7 @@ async def test_the_anniversary_rule_says_which_day_it_is(client, app):
     규칙이 날을 들고 있고(처음 대화한 날부터 센 날수, 사이가 가까워진 날), 울릴 때는
     그 까닭을 함께 내놓는다 — 말을 짓는 모델이 오늘이 무슨 날인지 알아야 한다.
     """
-    from memora.services import triggers as TR
+    from blackmoa.services import triggers as TR
 
     rule = next(r for r in TR.DEFAULT_RULES if r["key"] == "anniversary")
     assert rule["when"]["days"] == [7, 30, 100, 365] and rule["when"]["stage_up"] is True
@@ -1176,7 +1176,7 @@ async def test_the_anniversary_rule_says_which_day_it_is(client, app):
     # 날도 없고 가까워진 날도 끄면 영영 안 울리는 규칙이다 — 저장하지 않는다
     import pytest as _pt
 
-    from memora.core.errors import ValidationFailed
+    from blackmoa.core.errors import ValidationFailed
     with _pt.raises(ValidationFailed):
         TR.normalise_rule({**rule, "when": {**rule["when"], "days": [], "stage_up": False}})
 
@@ -1195,9 +1195,9 @@ async def test_an_admin_can_try_a_trigger_on_their_own_secretary_without_a_trace
     """
     from sqlalchemy import func, select
 
-    from memora.db.session import session_scope
-    from memora.models import AgentRelationship, Message, UsageEvent, User
-    from memora.services import triggers as TR
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentRelationship, Message, UsageEvent, User
+    from blackmoa.services import triggers as TR
     from tests.conftest import auth, signup
 
     user, tok = await signup(client)
@@ -1206,7 +1206,7 @@ async def test_an_admin_can_try_a_trigger_on_their_own_secretary_without_a_trace
         (await db.get(User, uid)).role = "admin"
     a = (await client.post("/api/agents", json={"name": "시험"}, headers=auth(tok))).json()["id"]
 
-    import memora.providers.llm.simple as SIMPLE
+    import blackmoa.providers.llm.simple as SIMPLE
 
     async def fake_complete(db, **kw):
         assert "30일째" in kw.get("user_text", ""), "오늘이 무슨 날인지 모델이 알아야 한다"
@@ -1243,11 +1243,11 @@ async def test_the_trigger_log_shows_what_was_said_and_what_it_cost(client, app,
     """
     from datetime import UTC, datetime, timedelta
 
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import relationship as REL
-    from memora.services import settings as S
-    from memora.services import triggers as TR
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import relationship as REL
+    from blackmoa.services import settings as S
+    from blackmoa.services import triggers as TR
     from tests.conftest import auth, signup
 
     user, tok = await signup(client)
@@ -1260,7 +1260,7 @@ async def test_the_trigger_log_shows_what_was_said_and_what_it_cost(client, app,
         await S.put(db, "triggers.rules", {"items": rules})
     a = (await client.post("/api/agents", json={"name": "기록"}, headers=auth(tok))).json()["id"]
 
-    import memora.providers.llm.simple as SIMPLE
+    import blackmoa.providers.llm.simple as SIMPLE
 
     async def fake_complete(db, **kw):
         return "요즘 어떻게 지내세요?", {"input_tokens": 100, "output_tokens": 20}
@@ -1283,10 +1283,10 @@ async def test_the_trigger_log_shows_what_was_said_and_what_it_cost(client, app,
                              params={"agent": a, "replied": "no"})).json()
     assert only["summary"]["count"] == 1 and only["summary"]["replied"] == 0
     # 답이 오면 [답이 온 것] 에만 선다 — 거르기가 실제로 걸러야 한다
-    from memora.models import Message
-    from memora.services import conversations as CV
+    from blackmoa.models import Message
+    from blackmoa.services import conversations as CV
     async with session_scope() as db:
-        conv = await db.get(__import__("memora.models", fromlist=["Conversation"]).Conversation, uuid.UUID(mine[0]["conversation_id"]))
+        conv = await db.get(__import__("blackmoa.models", fromlist=["Conversation"]).Conversation, uuid.UUID(mine[0]["conversation_id"]))
         await CV.add_message(db, conv, role="user", content="잘 지내요!")
     yes = (await client.get("/api/admin/triggers/log", headers=auth(tok), params={"agent": a, "replied": "yes"})).json()
     no = (await client.get("/api/admin/triggers/log", headers=auth(tok), params={"agent": a, "replied": "no"})).json()

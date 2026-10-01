@@ -11,8 +11,8 @@ import uuid as _uuid
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import Agent, KnowledgeDocument, ShareLink, User
+from blackmoa.db.session import session_scope
+from blackmoa.models import Agent, KnowledgeDocument, ShareLink, User
 from tests.conftest import auth, signup
 
 
@@ -29,7 +29,7 @@ async def _open_page(user_id: str, handle: str) -> None:
 
 async def _reaches(owner_id: str, viewer: str) -> set[str]:
     """그 사람의 비서가 외부인 대화에서 이 사람(viewer)에게 쓰는 피드 글 사본의 제목 (plan/57)."""
-    from memora.services import outsider as OUT
+    from blackmoa.services import outsider as OUT
     async with session_scope() as db:
         a = (await db.execute(select(Agent).where(Agent.owner_id == _uuid.UUID(owner_id)))).scalars().first()
         sc = await OUT.scope(db, a, "knowledge", viewer)

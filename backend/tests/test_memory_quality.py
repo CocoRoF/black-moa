@@ -7,8 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from memora.memory.distill import NOTE_MAX, SAME_STORY, _merged_body, _same_story
-from memora.memory.notes import content_words, overlap
+from blackmoa.memory.distill import NOTE_MAX, SAME_STORY, _merged_body, _same_story
+from blackmoa.memory.notes import content_words, overlap
 
 
 @dataclass
@@ -80,7 +80,7 @@ def test_the_reworded_duplicate_is_left_to_the_prompt():
     # 프롬프트가 이 대화의 기존 노트를 실제로 보여 주는지.
     import inspect
 
-    from memora.memory import distill as D
+    from blackmoa.memory import distill as D
 
     assert "{notes_here}" in D.SYSTEM
     assert "return null" in D.SYSTEM
@@ -98,12 +98,12 @@ def test_an_errand_turn_is_never_distilled():
     """
     import inspect
 
-    from memora.memory import distill as D
+    from blackmoa.memory import distill as D
 
     src = inspect.getsource(D.distill_turn)
     assert "if turn.simulated:" in src, "증류가 스스로 심부름을 거절하지 않는다"
     # 그리고 심부름을 만드는 곳이 턴에 표시를 붙인다.
-    from memora.services import blog as B
+    from blackmoa.services import blog as B
 
     for fn in (B.describe_photos, B.secretary_reply):
         assert "simulated=True" in inspect.getsource(fn), fn.__name__

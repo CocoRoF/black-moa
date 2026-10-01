@@ -22,7 +22,7 @@ function ThemedArt({ light, dark, alt, height, width, className }: {
   );
 }
 
-/** Header logo: the Memora logo itself. `size` = image height in px.
+/** Header logo: the black-moa logo itself. `size` = image height in px.
  *  (The full lockup shrinks the wordmark to an illegible smudge at header size, so headers
  *  carry the wordmark alone; use `LogoMark` when the square mark is wanted instead.) */
 export function Logo({ href = "/", size = 32, label, className }: { href?: string | null; size?: number; label?: string; className?: string }) {
@@ -45,12 +45,12 @@ export function LogoMark({ size = 32, className, href, muted }: { size?: number;
   return <Link href={href} aria-label={BRAND.name} className="inline-flex rounded-full focus-visible:outline-2 focus-visible:outline-ring">{el}</Link>;
 }
 
-/** Wordmark only ("Memora"). `size` = height in px. */
+/** Wordmark only ("black-moa"). `size` = height in px. */
 export function Wordmark({ size = 20, className }: { size?: number; className?: string }) {
   return <ThemedArt light={BRAND.wordmark} dark={BRAND.wordmarkDark} alt={BRAND.name} height={size} className={className} />;
 }
 
-/** The Memora mark alone (transparent PNG). `size` = height in px. */
+/** The black-moa mark alone (transparent PNG). `size` = height in px. */
 export function Mascot({ size = 96, className, alt = "" }: { size?: number; className?: string; alt?: string }) {
   return <img src={BRAND.character} alt={alt} width={110} height={195} className={cn("block w-auto select-none", className)} style={{ height: size }} draggable={false} />;
 }

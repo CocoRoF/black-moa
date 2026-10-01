@@ -13,10 +13,10 @@ jobs:
     services:
       postgres:
         image: pgvector/pgvector:pg16
-        env: { POSTGRES_USER: memora, POSTGRES_PASSWORD: memora, POSTGRES_DB: memora }
+        env: { POSTGRES_USER: blackmoa, POSTGRES_PASSWORD: blackmoa, POSTGRES_DB: blackmoa }
         ports: ["55432:5432"]
         options: >-
-          --health-cmd "pg_isready -U memora" --health-interval 5s --health-timeout 5s --health-retries 20
+          --health-cmd "pg_isready -U blackmoa" --health-interval 5s --health-timeout 5s --health-retries 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -33,11 +33,11 @@ jobs:
       - run: cd backend && uv run ruff check src tests
       - run: cd backend && uv run pytest -vv --durations=20
         env:
-          # backend/tests/conftest.py drops and recreates memora_test through the
-          # memora role, so the service database and these names have to agree.
-          MEMORA_DATABASE_URL: postgresql+asyncpg://memora:memora@127.0.0.1:55432/memora_test
-          MEMORA_DATA_DIR: /tmp/memora-data
-          MEMORA_CLAUDE_HOME: /tmp/memora-claude
+          # backend/tests/conftest.py drops and recreates blackmoa_test through the
+          # blackmoa role, so the service database and these names have to agree.
+          BLACKMOA_DATABASE_URL: postgresql+asyncpg://blackmoa:blackmoa@127.0.0.1:55432/blackmoa_test
+          BLACKMOA_DATA_DIR: /tmp/blackmoa-data
+          BLACKMOA_CLAUDE_HOME: /tmp/blackmoa-claude
           OPENBLAS_NUM_THREADS: "1"
 
   frontend:
@@ -84,16 +84,16 @@ jobs:
         run: |
           set -eu
           cd desktop
-          # 본창의 세 문(대화·소식·커뮤니티)은 memo-ora.com 의 웹이어야 한다(0.8, 앱=틀). 앱이 제 화면을
+          # 본창의 세 문(대화·소식·커뮤니티)은 black.memo-ora.com 의 웹이어야 한다(0.8, 앱=틀). 앱이 제 화면을
           # 끼워 넣으면 그때부터 웹에서 쓰는 것과 앱에서 쓰는 것이 갈라진다.
           grep -q "loadURL(ORIGIN + (path ?? doorHome(door)))" src/main/window.ts \
-            || { echo "::error::본창의 문이 더는 memo-ora.com 을 열지 않습니다"; exit 1; }
+            || { echo "::error::본창의 문이 더는 black.memo-ora.com 을 열지 않습니다"; exit 1; }
           for home in "'/app/chat'" "'/app/feed'" "'/app/community'"; do
             grep -q "home: $home" src/shared/contract.ts \
               || { echo "::error::문 $home 이 웹 주소가 아닙니다"; exit 1; }
           done
           # 서버 주소는 고정이다.
-          grep -q "export const ORIGIN = 'https://memo-ora.com'" src/shared/contract.ts \
+          grep -q "export const ORIGIN = 'https://black.memo-ora.com'" src/shared/contract.ts \
             || { echo "::error::서버 주소가 고정이 아닙니다"; exit 1; }
           # 앱은 갱신하지 않는다. 웹과 같은 갱신 쿠키로 따로 갱신하면 서버가
           # 토큰 도난으로 보고 세션을 끊는다 (plan/46 §2).
@@ -107,12 +107,12 @@ jobs:
     # The compose CPU limits are sized for the 4-core production host. Docker rejects a limit
     # above the machine's core count, and this runner has two.
     env:
-      MEMORA_POSTGRES_CPUS: "1.0"
-      MEMORA_BACKEND_CPUS: "2.0"
-      MEMORA_WORKER_CPUS: "1.0"
-      MEMORA_FRONTEND_CPUS: "1.0"
-      MEMORA_SEAWEEDFS_CPUS: "0.5"
-      MEMORA_NGINX_CPUS: "0.5"
+      BLACKMOA_POSTGRES_CPUS: "1.0"
+      BLACKMOA_BACKEND_CPUS: "2.0"
+      BLACKMOA_WORKER_CPUS: "1.0"
+      BLACKMOA_FRONTEND_CPUS: "1.0"
+      BLACKMOA_SEAWEEDFS_CPUS: "0.5"
+      BLACKMOA_NGINX_CPUS: "0.5"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -125,21 +125,21 @@ jobs:
           cp .env.example .env
           # Generated per run: a literal placeholder here trips secret scanners on every PR.
           sed -i \
-            -e "s|^MEMORA_SECRET_KEY=$|MEMORA_SECRET_KEY=$(openssl rand -hex 32)|" \
-            -e "s|^MEMORA_BOOTSTRAP_TOKEN=$|MEMORA_BOOTSTRAP_TOKEN=$(openssl rand -hex 32)|" \
-            -e "s|^MEMORA_ENCRYPTION_KEY=$|MEMORA_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr '+/' '-_')|" \
+            -e "s|^BLACKMOA_SECRET_KEY=$|BLACKMOA_SECRET_KEY=$(openssl rand -hex 32)|" \
+            -e "s|^BLACKMOA_BOOTSTRAP_TOKEN=$|BLACKMOA_BOOTSTRAP_TOKEN=$(openssl rand -hex 32)|" \
+            -e "s|^BLACKMOA_ENCRYPTION_KEY=$|BLACKMOA_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr '+/' '-_')|" \
             -e "s|^POSTGRES_PASSWORD=$|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" \
             -e "s|^S3_SECRET_KEY=$|S3_SECRET_KEY=$(openssl rand -hex 32)|" \
             .env
-          docker compose -p memora config -q
+          docker compose -p blackmoa config -q
       - name: Build production images
         run: |
           cd deploy
-          docker compose -p memora build backend frontend
+          docker compose -p blackmoa build backend frontend
       - name: Smoke production stack
         run: |
           cd deploy
-          docker compose -p memora up -d postgres backend worker frontend nginx
+          docker compose -p blackmoa up -d postgres backend worker frontend nginx
           healthy=0
           for _ in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:58700/health >/dev/null; then
@@ -149,19 +149,19 @@ jobs:
             sleep 2
           done
           if [ "$healthy" -ne 1 ]; then
-            docker compose -p memora ps
-            docker compose -p memora logs --no-color backend worker frontend nginx postgres
+            docker compose -p blackmoa ps
+            docker compose -p blackmoa logs --no-color backend worker frontend nginx postgres
             exit 1
           fi
           for service in backend worker; do
-            uid="$(docker compose -p memora exec -T "$service" sh -c "awk '/^Uid:/{print \$2}' /proc/1/status")"
+            uid="$(docker compose -p blackmoa exec -T "$service" sh -c "awk '/^Uid:/{print \$2}' /proc/1/status")"
             if [ "$uid" != "10001" ]; then
               echo "$service PID 1 is not running as uid 10001 (got $uid)" >&2
-              docker compose -p memora logs --no-color "$service"
+              docker compose -p blackmoa logs --no-color "$service"
               exit 1
             fi
           done
-          docker compose -p memora ps
+          docker compose -p blackmoa ps
       - name: Check the promises the web tier makes
         run: |
           set -eu
@@ -187,4 +187,4 @@ jobs:
           echo "one address per person, embeddable visitor page, unframeable console"
       - name: Tear down smoke stack
         if: always()
-        run: cd deploy && docker compose -p memora down -v --remove-orphans
+        run: cd deploy && docker compose -p blackmoa down -v --remove-orphans

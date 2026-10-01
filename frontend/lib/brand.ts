@@ -1,14 +1,14 @@
 /** Bumped whenever the artwork changes.
  *
  *  The assets are served with a seven-day max-age at the edge, so a new logo under an old
- *  path stays invisible for a week — which is exactly what happened on the Memora rename.
+ *  path stays invisible for a week — which is exactly what happened on the black-moa rename.
  *  The version rides on the URL so a change ships the moment it deploys. */
-export const BRAND_REV = "3";
+export const BRAND_REV = "4";
 const v = (path: string) => `${path}?v=${BRAND_REV}`;
 
 /** Static brand constants. Runtime service_name from /api/public/branding may override text labels. */
 export const BRAND = {
-  name: "Memora",
+  name: "black-moa",
   tagline_ko: "당신의 진짜 비서를 만들어보세요",
   tagline_en: "Build your real secretary",
   // Sampled from the mark itself: the M runs blue on the left to purple on the right.

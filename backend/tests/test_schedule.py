@@ -25,7 +25,7 @@ KST = ZoneInfo("Asia/Seoul")
 
 def _next_weekday(wd: int) -> date:
     """다음 그 요일 — 공휴일이면 그다음 주로. 공휴일에는 빈 시간이 나지 않는다 (plan/60)."""
-    from memora.services import special_days as SD
+    from blackmoa.services import special_days as SD
     d = datetime.now(KST).date() + timedelta(days=1)
     off = {x.day for y in (d.year, d.year + 1) for x in SD.builtin(y) if x.off}
     while d.weekday() != wd or d in off:
@@ -80,9 +80,9 @@ async def test_free_time_sits_inside_the_hours_and_around_busy_events(client: As
 
 async def _world(client, visibility: str):
     """``visibility``: 이 비서가 외부인에게 빈 시간을 알려 주는 범위이자, 연락 규칙 칸의 프로필 공개 범위."""
-    from memora.db.session import session_scope
-    from memora.models import Agent, User
-    from memora.services import profile as PF
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, User
+    from blackmoa.services import profile as PF
 
     user, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "일정비서"}, headers=auth(tok))).json()
@@ -109,14 +109,14 @@ def _ctx(owner, a, prof, audience="owner", viewer="owner", disclosure=None):
 
 async def _vctx(owner, a, prof, viewer):
     """러너가 턴마다 하는 것처럼 — 이 비서의 [지식] 탭대로 이 사람에게 쓸 것을 정한 외부인 대화."""
-    from memora.db.session import session_scope
-    from memora.services import outsider as OUT
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import outsider as OUT
     async with session_scope() as db:
         return _ctx(owner, a, prof, "visitor", viewer, await OUT.for_turn(db, a, viewer))
 
 
 async def test_visitors_get_free_time_only_when_the_owner_shares_it(client: AsyncClient):
-    from memora.pipeline.tools.schedule_tools import CalendarAvailability
+    from blackmoa.pipeline.tools.schedule_tools import CalendarAvailability
 
     owner, a, prof, _ = await _world(client, "private")
     stranger = json.loads((await CalendarAvailability(await _vctx(owner, a, prof, "stranger")).execute({}, None)).content)
@@ -130,8 +130,8 @@ async def test_visitors_get_free_time_only_when_the_owner_shares_it(client: Asyn
 
 
 async def test_private_hours_and_rules_stay_out_of_visitor_prompts(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.pipeline.runtime import collect_resources
+    from blackmoa.db.session import session_scope
+    from blackmoa.pipeline.runtime import collect_resources
 
     owner, a, prof, _ = await _world(client, "private")
     async with session_scope() as db:
@@ -146,10 +146,15 @@ async def test_private_hours_and_rules_stay_out_of_visitor_prompts(client: Async
 
 
 async def test_the_secretary_reads_and_writes_the_schedule_in_owner_chats(client: AsyncClient, google_on):
-    from memora.db.session import session_scope
-    from memora.models import Connection, IntegrationEvent
-    from memora.pipeline.tools.base import tool_names_for
-    from memora.pipeline.tools.schedule_tools import CalendarList, ScheduleAdd, ScheduleRemove, ScheduleUpdate
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Connection, IntegrationEvent
+    from blackmoa.pipeline.tools.base import tool_names_for
+    from blackmoa.pipeline.tools.schedule_tools import (
+        CalendarList,
+        ScheduleAdd,
+        ScheduleRemove,
+        ScheduleUpdate,
+    )
 
     owner, a, prof, tok = await _world(client, "public")
     ctx = _ctx(owner, a, prof)
@@ -157,7 +162,7 @@ async def test_the_secretary_reads_and_writes_the_schedule_in_owner_chats(client
     added = json.loads((await ScheduleAdd(ctx).execute({"title": "치과", "start": f"{day}T15:00"}, None)).content)["added"]
     assert added["when"].startswith(f"{day} (") and " 15:00" in added["when"] and ctx.cards[0]["card_type"] == "schedule_saved"
     json.loads((await ScheduleUpdate(ctx).execute({"event_id": added["id"], "start": f"{day}T16:00"}, None)).content)
-    # Google 에서 가져온 일정도 함께, Google 에도 넣은 Memora 일정은 한 번만.
+    # Google 에서 가져온 일정도 함께, Google 에도 넣은 black-moa 일정은 한 번만.
     async with session_scope() as db:
         conn = Connection(owner_id=owner.id, provider="google", account_label="g@example.com", capabilities=["calendar_read"],
                           access_token_enc="", refresh_token_enc="", status="active", token_expires_at=datetime.now(UTC) + timedelta(hours=1))
@@ -167,7 +172,7 @@ async def test_the_secretary_reads_and_writes_the_schedule_in_owner_chats(client
         db.add(IntegrationEvent(owner_id=owner.id, connection_id=conn.id, ext_id="g1", title="팀 점심", start_at=start, end_at=start + timedelta(hours=1)))
         await db.commit()
     listed = json.loads((await CalendarList(ctx).execute({"start": str(day), "end": str(day)}, None)).content)["events"]
-    assert [(e["title"], e["from"]) for e in listed] == [("팀 점심", "Google Calendar"), ("치과", "Memora")]
+    assert [(e["title"], e["from"]) for e in listed] == [("팀 점심", "Google Calendar"), ("치과", "black-moa")]
     assert "external_readonly" in json.dumps(json.loads((await ScheduleRemove(ctx).execute({"event_id": "google:g1"}, None)).content))
     json.loads((await ScheduleRemove(ctx).execute({"event_id": added["id"]}, None)).content)
     assert (await client.get(f"/api/schedule?from={day}&to={day}", headers=auth(tok))).json()["events"][0]["source"] == "google"
@@ -177,9 +182,9 @@ async def test_the_secretary_reads_and_writes_the_schedule_in_owner_chats(client
 
 
 async def test_google_all_day_events_start_at_the_owners_midnight(client: AsyncClient, monkeypatch, google_on):
-    from memora.db.session import session_scope
-    from memora.models import Connection, IntegrationEvent, User
-    from memora.services import google as G
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Connection, IntegrationEvent, User
+    from blackmoa.services import google as G
 
     user, _ = await signup(client)
     async with session_scope() as db:
@@ -201,7 +206,7 @@ async def test_google_all_day_events_start_at_the_owners_midnight(client: AsyncC
     async def fake_request(*a, **k):
         return R()
 
-    monkeypatch.setattr("memora.services.connections.access_token", fake_token)
+    monkeypatch.setattr("blackmoa.services.connections.access_token", fake_token)
     monkeypatch.setattr(G, "request", fake_request)
     async with session_scope() as db:
         conn = await db.get(Connection, cid)

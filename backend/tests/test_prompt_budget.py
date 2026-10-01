@@ -49,11 +49,11 @@ async def test_every_section_and_the_whole_stay_under_their_ceilings(client: Asy
 
 
 async def test_relay_rules_are_stable_and_the_per_turn_note_is_small():
-    from memora.pipeline import base_prompt as BP
+    from blackmoa.pipeline import base_prompt as BP
     for side in ("initiator", "target"):
         sec = BP.relay_section(side)
         assert len(sec) <= CEILINGS["base_relay"] and "relay_close" in sec
     # the boundaries moved into the owner rules once; the volatile relationship block no longer carries them
     assert "sexual" in BP.OWNER_RULES and "pretending to be human" in BP.OWNER_RULES
-    from memora.services import relationship as REL
+    from blackmoa.services import relationship as REL
     assert not hasattr(REL, "SAFETY_LINES")

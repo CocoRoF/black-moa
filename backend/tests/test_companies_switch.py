@@ -13,14 +13,14 @@ from types import SimpleNamespace
 import pytest_asyncio
 from httpx import AsyncClient
 
-from memora.db.session import session_scope
+from blackmoa.db.session import session_scope
 from tests.conftest import auth, signup
 from tests.test_blog import _open_page
 from tests.test_company_reviews import make_company
 
 
 async def _companies(on: bool) -> None:
-    from memora.services import settings as S
+    from blackmoa.services import settings as S
     async with session_scope() as db:
         await S.put(db, "companies.enabled", on)
         await db.commit()
@@ -35,8 +35,8 @@ async def companies_restored(app):
 
 async def _verify(user_id: str, cid: str) -> None:
     """회사 이메일 인증을 마친 것처럼: 인증 기록과 프로필의 회사."""
-    from memora.models import CompanyVerification
-    from memora.services import profile as PF
+    from blackmoa.models import CompanyVerification
+    from blackmoa.services import profile as PF
     async with session_scope("worker") as db:
         db.add(CompanyVerification(user_id=_uuid.UUID(user_id), company_id=_uuid.UUID(cid), domain="same.com",
                                    email_hash=_uuid.uuid4().hex, code_hash="x", code_expires_at=datetime.now(UTC),
@@ -94,7 +94,7 @@ async def test_off_the_company_is_hidden_everywhere_and_cannot_be_entered(client
     page = (await client.get(f"/api/public/people/co{tag}")).json()
     assert "company" not in page["fields"] and "company_verified_at" not in page["fields"]
     # 광장의 글쓴이 줄에도.
-    from memora.services import community as C
+    from blackmoa.services import community as C
     async with session_scope() as db:
         author = (await C.authors_for(db, {_uuid.UUID(me["id"])}, me=None))[_uuid.UUID(me["id"])]
     assert author.job == "백엔드 개발자"
@@ -111,10 +111,10 @@ async def test_off_the_company_is_hidden_everywhere_and_cannot_be_entered(client
 
 
 async def test_off_the_secretary_neither_knows_nor_writes_the_company(client: AsyncClient, companies_restored):
-    from memora.pipeline.context import TurnContext
-    from memora.pipeline.tools.base import tool_names_for
-    from memora.pipeline.tools.profile_tools import ProfileGet, ProfileUpdate
-    from memora.services import profile as PF
+    from blackmoa.pipeline.context import TurnContext
+    from blackmoa.pipeline.tools.base import tool_names_for
+    from blackmoa.pipeline.tools.profile_tools import ProfileGet, ProfileUpdate
+    from blackmoa.services import profile as PF
 
     me, tok = await signup(client)
     await client.put("/api/users/me/profile", headers=auth(tok), json={
@@ -144,7 +144,7 @@ async def test_off_the_secretary_neither_knows_nor_writes_the_company(client: As
 
 
 async def test_off_a_colleague_is_a_stranger(client: AsyncClient, companies_restored):
-    from memora.services import people as P
+    from blackmoa.services import people as P
 
     me, _ = await signup(client)
     colleague, _ = await signup(client)
@@ -186,7 +186,7 @@ async def test_jobs_move_with_companies(client: AsyncClient, companies_restored)
 
 
 async def test_off_company_notices_leave_the_inbox(client: AsyncClient, companies_restored):
-    from memora.services import inbox as I
+    from blackmoa.services import inbox as I
 
     me, tok = await signup(client)
     async with session_scope() as db:

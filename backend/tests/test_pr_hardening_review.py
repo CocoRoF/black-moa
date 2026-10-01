@@ -16,9 +16,9 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import func, select, text
 
-from memora.core.errors import PaymentRequired
-from memora.db.session import SessionLocal, session_scope
-from memora.models import (
+from blackmoa.core.errors import PaymentRequired
+from blackmoa.db.session import SessionLocal, session_scope
+from blackmoa.models import (
     Agent,
     Conversation,
     CreditLedger,
@@ -29,7 +29,7 @@ from memora.models import (
     User,
     Visitor,
 )
-from memora.services import credits as CR
+from blackmoa.services import credits as CR
 from tests.conftest import auth, signup
 from tests.test_domain import _run_jobs
 
@@ -125,8 +125,8 @@ async def test_stale_reservation_is_released_by_the_reaper(client):
 
 
 async def test_reservation_reaper_is_registered_and_scheduled():
-    from memora.worker.__main__ import SCHEDULE
-    from memora.worker.handlers import HANDLERS
+    from blackmoa.worker.__main__ import SCHEDULE
+    from blackmoa.worker.handlers import HANDLERS
 
     assert "credits.reservation_reaper" in HANDLERS
     assert "credits.reservation_reaper" in {kind for kind, _every, _dedupe in SCHEDULE}
@@ -144,7 +144,7 @@ async def test_reservation_reaper_handler_sweeps_terminal_audit_rows(client):
                                  audience="owner", status="settled", created_at=datetime.now(UTC) - timedelta(days=90),
                                  settled_at=datetime.now(UTC) - timedelta(days=90)))
     async with session_scope() as db:
-        from memora.worker.handlers import HANDLERS
+        from blackmoa.worker.handlers import HANDLERS
 
         result = await HANDLERS["credits.reservation_reaper"](db, {})
     assert result["swept"] >= 1
@@ -288,7 +288,7 @@ async def test_settlement_is_booked_on_the_reservation_day_not_todays_row(client
 
 
 async def test_retention_keeps_a_visitor_that_still_has_a_retained_conversation(client):
-    from memora.services.retention import retention_sweep
+    from blackmoa.services.retention import retention_sweep
 
     user, _ = await signup(client)
     owner_id = uuid.UUID(user["id"])
@@ -321,8 +321,8 @@ async def test_retention_keeps_a_visitor_that_still_has_a_retained_conversation(
 
 
 async def test_retention_batches_job_payload_purge_and_keeps_the_memory_job(client):
-    from memora.services import jobs as J
-    from memora.services.retention import retention_sweep
+    from blackmoa.services import jobs as J
+    from blackmoa.services.retention import retention_sweep
 
     user, _ = await signup(client)
     owner_id = uuid.UUID(user["id"])
@@ -353,8 +353,8 @@ async def test_retention_batches_job_payload_purge_and_keeps_the_memory_job(clie
 
 
 async def test_retention_drops_orphaned_visitor_private_facts(client):
-    from memora.models import Fact
-    from memora.services.retention import retention_sweep
+    from blackmoa.models import Fact
+    from blackmoa.services.retention import retention_sweep
 
     user, _ = await signup(client)
     owner_id = uuid.UUID(user["id"])
@@ -411,13 +411,13 @@ def _stub_connection(monkeypatch, response: bytes, captured: dict):
         reader.feed_eof()
         return reader, writer
 
-    from memora.services import safe_http as SH
+    from blackmoa.services import safe_http as SH
 
     monkeypatch.setattr(SH.asyncio, "open_connection", fake_open_connection)
 
 
 def test_safe_http_rejects_literal_internal_addresses(monkeypatch):
-    from memora.services import safe_http as SH
+    from blackmoa.services import safe_http as SH
 
     monkeypatch.setattr(SH, "get_settings", lambda: SimpleNamespace(outbound_allowed_ports="80,443"))
     for url in ("http://169.254.169.254/latest/meta-data/", "http://127.0.0.1/", "http://[::1]/",
@@ -434,7 +434,7 @@ def test_safe_http_rejects_literal_internal_addresses(monkeypatch):
 
 
 def test_outbound_port_allowlist_parsing(monkeypatch):
-    from memora.services import safe_http as SH
+    from blackmoa.services import safe_http as SH
 
     def ports(raw):
         monkeypatch.setattr(SH, "get_settings", lambda: SimpleNamespace(outbound_allowed_ports=raw))
@@ -450,7 +450,7 @@ def test_outbound_port_allowlist_parsing(monkeypatch):
 
 
 async def test_safe_http_https_keeps_hostname_for_sni_while_pinning_the_ip(monkeypatch):
-    from memora.services import safe_http as SH
+    from blackmoa.services import safe_http as SH
 
     monkeypatch.setattr(SH, "_public_ips", lambda host, port: ("93.184.216.34",))
     monkeypatch.setattr(SH, "get_settings", lambda: SimpleNamespace(outbound_allowed_ports="80,443"))
@@ -465,7 +465,7 @@ async def test_safe_http_https_keeps_hostname_for_sni_while_pinning_the_ip(monke
 
 
 async def test_safe_http_revalidates_every_redirect_hop(monkeypatch):
-    from memora.services import safe_http as SH
+    from blackmoa.services import safe_http as SH
 
     monkeypatch.setattr(SH, "get_settings", lambda: SimpleNamespace(outbound_allowed_ports="80,443"))
 
@@ -485,7 +485,7 @@ async def test_safe_http_revalidates_every_redirect_hop(monkeypatch):
 
 
 async def test_webhook_delivery_goes_through_safe_http(monkeypatch, client):
-    from memora.services import notifications as NT
+    from blackmoa.services import notifications as NT
 
     calls: dict = {}
 
@@ -500,14 +500,14 @@ async def test_webhook_delivery_goes_through_safe_http(monkeypatch, client):
                           subject="s", text="t", html="<p>t</p>", payload={"event": "test"})
     assert calls["method"] == "POST" and calls["url"] == "https://hooks.example/x"
     assert calls["max_redirects"] == 0
-    assert calls["headers"]["X-Memora-Signature"].startswith("sha256=")
+    assert calls["headers"]["X-black-moa-Signature"].startswith("sha256=")
 
     # a destination that stopped resolving publicly is refused at delivery time
     def blocked(_url):
         raise ValueError("blocked_host")
 
     monkeypatch.setattr(NT, "check_url", blocked)
-    from memora.core.errors import ValidationFailed
+    from blackmoa.core.errors import ValidationFailed
 
     async with session_scope() as db:
         with pytest.raises(ValidationFailed):
@@ -519,10 +519,10 @@ async def test_webhook_delivery_goes_through_safe_http(monkeypatch, client):
 
 
 def test_parser_child_applies_rlimits_and_blocks_sockets():
-    from memora.services import extract as EX
+    from blackmoa.services import extract as EX
 
     probe = (
-        "from memora.services.extract_worker import _apply_limits, _disable_network\n"
+        "from blackmoa.services.extract_worker import _apply_limits, _disable_network\n"
         "_apply_limits(); _disable_network()\n"
         "import json, resource, socket\n"
         "out = {'as': resource.getrlimit(resource.RLIMIT_AS)[0],\n"
@@ -553,7 +553,7 @@ def test_real_parser_child_extracts_every_supported_office_format():
     import openpyxl
     from pptx import Presentation
 
-    from memora.services.extract import extract
+    from blackmoa.services.extract import extract
 
     assert "hello world" in extract(b"# Title\n\nhello world", "text/markdown", "a.md").text
 
@@ -586,7 +586,7 @@ def test_real_parser_child_extracts_every_supported_office_format():
 def test_parser_child_rejects_a_zip_bomb_without_killing_the_parent():
     import zipfile
 
-    from memora.services.extract import extract
+    from blackmoa.services.extract import extract
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -598,8 +598,8 @@ def test_parser_child_rejects_a_zip_bomb_without_killing_the_parent():
 
 
 async def test_parser_timeout_produces_a_failed_document_not_a_stuck_job(client, monkeypatch):
-    from memora.services import extract as EX
-    from memora.services import knowledge as K
+    from blackmoa.services import extract as EX
+    from blackmoa.services import knowledge as K
 
     def timeout(*_args, **kwargs):
         raise subprocess.TimeoutExpired(cmd="parser", timeout=kwargs.get("timeout", 1))
@@ -644,9 +644,9 @@ async def test_knowledge_pipeline_indexes_markdown_and_docx_end_to_end(client):
 
 
 async def test_empty_encryption_key_keeps_the_legacy_derivation(client, monkeypatch):
-    """Production .env has MEMORA_ENCRYPTION_KEY empty: existing ciphertext must still open."""
-    from memora.core import security as SEC
-    from memora.services.keycheck import verify_encryption_keys
+    """Production .env has BLACKMOA_ENCRYPTION_KEY empty: existing ciphertext must still open."""
+    from blackmoa.core import security as SEC
+    from blackmoa.services.keycheck import verify_encryption_keys
 
     settings = SimpleNamespace(encryption_key="", encryption_key_previous="", secret_key="s" * 64,
                                public_url="https://secretary.example")
@@ -662,9 +662,9 @@ async def test_empty_encryption_key_keeps_the_legacy_derivation(client, monkeypa
 
 
 async def test_signing_key_rotation_without_pinned_fernet_key_fails_at_startup(client, monkeypatch):
-    from memora.core import security as SEC
-    from memora.services import settings as S
-    from memora.services.keycheck import verify_encryption_keys
+    from blackmoa.core import security as SEC
+    from blackmoa.services import settings as S
+    from blackmoa.services.keycheck import verify_encryption_keys
 
     async with session_scope() as db:
         await S.put(db, "providers.anthropic.api_key", "sk-ant-canary")
@@ -676,11 +676,11 @@ async def test_signing_key_rotation_without_pinned_fernet_key_fails_at_startup(c
         with pytest.raises(RuntimeError) as e:
             await verify_encryption_keys(db)
     message = str(e.value)
-    assert "MEMORA_ENCRYPTION_KEY" in message
-    assert "keytool legacy" in message and "MEMORA_SECRET_KEY" in message
+    assert "BLACKMOA_ENCRYPTION_KEY" in message
+    assert "keytool legacy" in message and "BLACKMOA_SECRET_KEY" in message
 
     # pinning the legacy key derived from the OLD signing key repairs it
-    from memora.config import get_settings
+    from blackmoa.config import get_settings
 
     rotated.encryption_key_previous = SEC.legacy_fernet_key(secret_key=get_settings().secret_key)
     async with session_scope() as db:
@@ -692,7 +692,7 @@ async def test_signing_key_rotation_without_pinned_fernet_key_fails_at_startup(c
 
 
 def test_bootstrap_token_is_only_required_for_https_installs(monkeypatch):
-    from memora.services import accounts as A
+    from blackmoa.services import accounts as A
 
     monkeypatch.setattr(A, "get_settings",
                         lambda: SimpleNamespace(public_url="http://localhost:3000", bootstrap_token=""))
@@ -700,7 +700,7 @@ def test_bootstrap_token_is_only_required_for_https_installs(monkeypatch):
 
     monkeypatch.setattr(A, "get_settings",
                         lambda: SimpleNamespace(public_url="https://secretary.example", bootstrap_token=""))
-    from memora.core.errors import Forbidden
+    from blackmoa.core.errors import Forbidden
 
     with pytest.raises(Forbidden) as e:
         A._validate_bootstrap(0, "anything")
@@ -709,8 +709,8 @@ def test_bootstrap_token_is_only_required_for_https_installs(monkeypatch):
 
 
 async def test_unsubscribe_token_is_scoped_to_unsubscribe(client):
-    from memora.core.security import sign_state
-    from memora.services import notifications as NT
+    from blackmoa.core.security import sign_state
+    from blackmoa.services import notifications as NT
 
     _, tok = await signup(client)
     channels = (await client.get("/api/notifications/channels", headers=auth(tok))).json()["items"]
@@ -749,7 +749,7 @@ async def test_admin_negative_adjustment_is_refused_cleanly_while_credits_are_he
 
 
 async def test_deleting_an_account_with_a_held_reservation_leaves_no_orphan_rows(client):
-    from memora.models import CreditBalance
+    from blackmoa.models import CreditBalance
     from tests.test_audit import _admin_token
 
     admin = await _admin_token(client)  # first, so the victim below is never the acting admin
@@ -776,7 +776,7 @@ async def test_deleting_an_account_with_a_held_reservation_leaves_no_orphan_rows
 def test_safe_http_accepts_public_mixed_and_ipv6_only_answers(monkeypatch):
     import socket as _socket
 
-    from memora.services import safe_http as SH
+    from blackmoa.services import safe_http as SH
 
     monkeypatch.setattr(SH, "get_settings", lambda: SimpleNamespace(outbound_allowed_ports="80,443"))
     monkeypatch.setattr(SH.socket, "getaddrinfo", lambda *_a, **_k: [
@@ -803,7 +803,7 @@ def test_safe_http_accepts_public_mixed_and_ipv6_only_answers(monkeypatch):
 
 async def test_auth_status_separates_bootstrap_needed_from_token_required(client, monkeypatch):
     """The signup form must not demand a token on a zero-config http install."""
-    from memora.api import auth as AUTH
+    from blackmoa.api import auth as AUTH
 
     body = (await client.get("/api/auth/status")).json()
     assert body["bootstrap_needed"] is False  # this suite already has accounts

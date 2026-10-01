@@ -6,7 +6,7 @@ then drives *real* turns — owner and visitor — asking questions that can onl
 from one source, and checks the answer. Nothing is mocked: same API, same pipeline, same
 model as a real conversation.
 
-Run:  python tools/context_matrix.py --base https://memora.hrletsgo.me --admin-pass '…'
+Run:  python tools/context_matrix.py --base https://blackmoa.hrletsgo.me --admin-pass '…'
       --keep to leave the tenant in place for inspection.
 """
 from __future__ import annotations
@@ -363,7 +363,7 @@ def run(base: str, admin_pass: str, admin_email: str, keep: bool, only: str | No
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--base", default="https://memora.hrletsgo.me")
+    ap.add_argument("--base", default="https://blackmoa.hrletsgo.me")
     ap.add_argument("--admin-pass", required=True)
     ap.add_argument("--admin-email", default="admin@geny.com")
     ap.add_argument("--keep", action="store_true")

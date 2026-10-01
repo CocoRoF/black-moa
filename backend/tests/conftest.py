@@ -4,15 +4,15 @@ import asyncio
 import os
 import uuid
 
-os.environ.setdefault("MEMORA_DATABASE_URL", "postgresql+asyncpg://memora:memora@127.0.0.1:55432/memora_test")
-os.environ.setdefault("MEMORA_DATA_DIR", "/tmp/memora-test-data")
-os.environ["MEMORA_FAKE_LLM"] = "1"
-os.environ["MEMORA_RATELIMIT_DISABLED"] = "1"
-os.environ["MEMORA_PUBLIC_URL"] = "http://testserver"
+os.environ.setdefault("BLACKMOA_DATABASE_URL", "postgresql+asyncpg://blackmoa:blackmoa@127.0.0.1:55432/blackmoa_test")
+os.environ.setdefault("BLACKMOA_DATA_DIR", "/tmp/blackmoa-test-data")
+os.environ["BLACKMOA_FAKE_LLM"] = "1"
+os.environ["BLACKMOA_RATELIMIT_DISABLED"] = "1"
+os.environ["BLACKMOA_PUBLIC_URL"] = "http://testserver"
 # The shipped admin seed would occupy the "first signup becomes admin" path; the
 # seed itself is covered by tests/test_admin_security.py.
-os.environ["MEMORA_DEFAULT_ADMIN_ENABLED"] = "0"
-os.environ["MEMORA_CLAUDE_HOME"] = "/tmp/memora-test-data/claude"
+os.environ["BLACKMOA_DEFAULT_ADMIN_ENABLED"] = "0"
+os.environ["BLACKMOA_CLAUDE_HOME"] = "/tmp/blackmoa-test-data/claude"
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 import pytest_asyncio  # noqa: E402
@@ -22,10 +22,10 @@ from sqlalchemy import text  # noqa: E402
 
 async def _reset_db():
     import asyncpg
-    admin = await asyncpg.connect("postgresql://memora:memora@127.0.0.1:55432/memora")
-    await admin.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='memora_test' AND pid <> pg_backend_pid()")
-    await admin.execute("DROP DATABASE IF EXISTS memora_test")
-    await admin.execute("CREATE DATABASE memora_test")
+    admin = await asyncpg.connect("postgresql://blackmoa:blackmoa@127.0.0.1:55432/blackmoa")
+    await admin.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='blackmoa_test' AND pid <> pg_backend_pid()")
+    await admin.execute("DROP DATABASE IF EXISTS blackmoa_test")
+    await admin.execute("CREATE DATABASE blackmoa_test")
     await admin.close()
     from alembic.config import Config
 
@@ -37,17 +37,17 @@ async def _reset_db():
 @pytest_asyncio.fixture(scope="session")
 async def app():
     await _reset_db()
-    from memora.main import app as _app
-    from memora.providers.llm.fake import register_fake
+    from blackmoa.main import app as _app
+    from blackmoa.providers.llm.fake import register_fake
     register_fake()
     async with _app.router.lifespan_context(_app):
-        from memora.db.session import session_scope
-        from memora.models import ModelCatalog
+        from blackmoa.db.session import session_scope
+        from blackmoa.models import ModelCatalog
         async with session_scope() as db:
             await db.execute(text("UPDATE model_catalog SET is_default=false"))
             db.add(ModelCatalog(provider="fake", model_id="fake-1", display_name="Fake", context_window=100000, max_output=4096,
                                 credit_per_1k_input=1, credit_per_1k_output=2, credit_per_1k_cache_read=0.1, enabled=True, is_default=True, sort_order=0))
-            from memora.services import settings as S
+            from blackmoa.services import settings as S
             await S.put(db, "embedding.provider", "hash")
             await S.put(db, "memory.distill_enabled", False)
             # Owning a secretary needs a verified address in production. Tests sign up
@@ -111,9 +111,9 @@ async def read_sse(resp) -> list[dict]:
 
 async def provider_on(provider: str, on: bool = True) -> None:
     """관리자 [연결] 에서 공급자를 켜고 끈다 (plan/59). 꺼 둔 공급자의 데이터는 어디에도 보이지 않는다."""
-    from memora.db.session import session_scope
-    from memora.services import oauth as OA
-    from memora.services import settings as S
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import oauth as OA
+    from blackmoa.services import settings as S
     async with session_scope() as db:
         await S.put(db, f"oauth.{provider}.enabled", on)
         await S.put(db, f"oauth.{provider}.client_id", "cid" if on else "")

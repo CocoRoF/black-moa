@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from memora.models import AgentRelationship
-from memora.services import relationship as R
+from blackmoa.models import AgentRelationship
+from blackmoa.services import relationship as R
 
 
 def _rel(**kw) -> AgentRelationship:
@@ -51,7 +51,7 @@ def test_nobody_can_set_how_fast_it_grows():
 
 
 def test_the_stage_can_come_back_down():
-    from memora.models import Agent
+    from blackmoa.models import Agent
 
     rel = _rel(active_days=40, turns=200, facts_remembered=40, posts_written=20, affinity=100,
                started_at=datetime.now(UTC) - timedelta(days=40))
@@ -179,7 +179,7 @@ def test_an_unanswered_word_cools_hard_and_quietly():
     talk(rel, at(4, 8))                      # 답했다 — 줄기가 끝나고, 그날의 대화가 붙는다
     assert rel.affinity == 36 and "awaiting" not in rel.affinity_state
     # 사용자에게 보이는 것에는 증감 기록이 없다.
-    agent = __import__("memora.models", fromlist=["Agent"]).Agent(name="제니", persona={}, owner_id=None)
+    agent = __import__("blackmoa.models", fromlist=["Agent"]).Agent(name="제니", persona={}, owner_id=None)
     out = R.rel_out(rel, agent)
     assert "affinity_log" not in out and "awaiting" not in str(out)
 

@@ -73,7 +73,7 @@ export function OwnerChat({ simulate = false, basePath, backHref = "/app/agents"
 
   const convs = useQuery({ queryKey: ["conversations", a.id, "owner"], queryFn: () => Chat.conversations(a.id, "owner"), enabled: !simulate });
   const createConv = useMutation({ mutationFn: () => Chat.createConversation(a.id), onSuccess: (c) => { qc.invalidateQueries({ queryKey: ["conversations", a.id] }); select(c.id); } });
-  const createSim = useMutation({ mutationFn: () => Agents.simulate(a.id), onSuccess: (c) => { storageSet("session", `memora:sim:${a.id}`, c.id); setCid(c.id); useChat.getState().reset(c.id); } });
+  const createSim = useMutation({ mutationFn: () => Agents.simulate(a.id), onSuccess: (c) => { storageSet("session", `blackmoa:sim:${a.id}`, c.id); setCid(c.id); useChat.getState().reset(c.id); } });
 
   const chatUrl = useCallback((convId?: string) => {
     const base = basePath ?? `/app/agents/${a.id}/chat`;
@@ -98,7 +98,7 @@ export function OwnerChat({ simulate = false, basePath, backHref = "/app/agents"
   useEffect(() => {
     if (simulate) {
       if (cid) return;
-      const prev = storageGet("session", `memora:sim:${a.id}`);
+      const prev = storageGet("session", `blackmoa:sim:${a.id}`);
       if (prev) { Chat.getConversation(a.id, prev).then((c) => setCid(c.id)).catch(() => createSim.mutate()); } else createSim.mutate();
       return;
     }
@@ -151,8 +151,8 @@ export function OwnerChat({ simulate = false, basePath, backHref = "/app/agents"
   useEffect(() => {
     if (!cid) return;
     const resync = () => void runner.follow();
-    window.addEventListener("memora:resync", resync);
-    return () => window.removeEventListener("memora:resync", resync);
+    window.addEventListener("blackmoa:resync", resync);
+    return () => window.removeEventListener("blackmoa:resync", resync);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cid]);
   // 다른 화면에서 이 대화를 지웠다 — 남은 대화로 옮긴다.

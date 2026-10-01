@@ -10,7 +10,7 @@ export function ToolChip({ tool, showDetail }: { tool: ToolChipState; showDetail
   const [open, setOpen] = useState(false);
   const t = useT(); const locale = useLocale();
   // 서버가 붙인 이름표는 한국어다. 다른 말로 쓰는 사람에게는 그 말의 도구 이름을 보인다.
-  const key = `tool.${(tool.name ?? "").replace(/^mcp__memora__/, "")}`;
+  const key = `tool.${(tool.name ?? "").replace(/^mcp__blackmoa__/, "")}`;
   // 방문자 화면은 도구 이름 대신 "activity" 를 받는다 — 그때는 서버가 함께 보낸 영어 이름표를 쓴다.
   const label = locale === "ko" ? tool.label || tool.name
     : tool.name !== "activity" && t(key) !== key ? t(key) : tool.label_en || tool.label || tool.name;

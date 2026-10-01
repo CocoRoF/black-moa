@@ -77,8 +77,8 @@ async def test_admin_pages_need_a_live_admin_role_not_just_an_old_token(client: 
     await signup(client, f"first-{uuid.uuid4().hex[:6]}@example.com")
     admin, admin_tok = await signup(client, f"a-{uuid.uuid4().hex[:6]}@example.com")
     second, second_tok = await signup(client, f"b-{uuid.uuid4().hex[:6]}@example.com")
-    from memora.db.session import session_scope
-    from memora.models import User
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
     async with session_scope() as db:
         u = await db.get(User, uuid.UUID(admin["id"]))
         u.role = "admin"
@@ -102,9 +102,9 @@ async def test_admin_pages_need_a_live_admin_role_not_just_an_old_token(client: 
 
 
 async def test_default_admin_seed_is_idempotent_and_warns_until_changed(client: AsyncClient, monkeypatch):
-    from memora.config import get_settings
-    from memora.db.session import session_scope
-    from memora.services import accounts as A
+    from blackmoa.config import get_settings
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import accounts as A
 
     s = get_settings()
     email = f"seed-{uuid.uuid4().hex[:6]}@geny.com"
@@ -135,7 +135,7 @@ async def test_default_admin_seed_is_idempotent_and_warns_until_changed(client: 
     assert (await client.post("/api/auth/login", json={"email": email, "password": "admin123"})).status_code == 401
     # Same reason as above: do not leave a second administrator behind.
     async with session_scope() as db:
-        from memora.models import User as U
+        from blackmoa.models import User as U
         await db.delete(await db.get(U, seeded_id))
 
 
@@ -177,8 +177,8 @@ async def admin_seat():
     from sqlalchemy import select as _sel
     from sqlalchemy import text as _t
 
-    from memora.db.session import session_scope
-    from memora.models import User as _U
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User as _U
 
     async with session_scope() as db:
         before = {u.id: (u.role, u.is_super) for u in (await db.execute(_sel(_U))).scalars().all()}
@@ -199,8 +199,8 @@ async def _make_admin(user_id: str, *, is_super: bool = False) -> None:
 
     from sqlalchemy import text as _t
 
-    from memora.db.session import session_scope
-    from memora.models import User as _U
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User as _U
     async with session_scope() as db:
         if is_super:
             await db.execute(_t("UPDATE users SET is_super = false WHERE is_super"))
@@ -261,9 +261,9 @@ async def test_the_seat_is_single_occupancy(client: AsyncClient, admin_seat):
     from sqlalchemy import select as _sel
     from sqlalchemy import text as _t
 
-    from memora.db.session import session_scope
-    from memora.models import User as _U
-    from memora.services import accounts as A
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User as _U
+    from blackmoa.services import accounts as A
 
     async with session_scope() as db:
         await db.execute(_t("UPDATE users SET is_super = false WHERE is_super"))

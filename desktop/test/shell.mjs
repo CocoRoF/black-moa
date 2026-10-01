@@ -10,8 +10,8 @@ import { _electron as electron } from '/home/workspace/.tools/pw/node_modules/pl
 import { execSync } from 'node:child_process';
 import { mkdirSync, rmSync } from 'node:fs';
 
-const SHOT = process.env.SHOT_DIR ?? '/tmp/memora-shots';
-const PROFILE = process.env.PROFILE_DIR ?? '/tmp/memora-shell';
+const SHOT = process.env.SHOT_DIR ?? '/tmp/blackmoa-shots';
+const PROFILE = process.env.PROFILE_DIR ?? '/tmp/blackmoa-shell';
 const XWD2PNG = new URL('./xwd2png.py', import.meta.url).pathname;
 mkdirSync(SHOT, { recursive: true });
 if (process.env.FRESH) rmSync(PROFILE, { recursive: true, force: true });
@@ -27,9 +27,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const app = await electron.launch({
   executablePath: BIN,
   args: ['.', '--no-sandbox', '--disable-gpu', `--user-data-dir=${PROFILE}`],
-  env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, ELECTRON_DISABLE_SECURITY_WARNINGS: '1', MEMORA_TEST_HOOKS: '1' },
+  env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, ELECTRON_DISABLE_SECURITY_WARNINGS: '1', BLACKMOA_TEST_HOOKS: '1' },
 });
-if (process.env.MEMORA_DEBUG) app.process().stdout.on('data', (d) => process.stdout.write(`[main] ${String(d).split('\n').filter((l) => l && !l.includes('pump] data')).join('\n[main] ')}\n`));
+if (process.env.BLACKMOA_DEBUG) app.process().stdout.on('data', (d) => process.stdout.write(`[main] ${String(d).split('\n').filter((l) => l && !l.includes('pump] data')).join('\n[main] ')}\n`));
 // 바깥 브라우저를 여는 대신 적어 둔다.
 await app.evaluate(({ shell }) => {
   globalThis.__opened = [];
@@ -53,7 +53,7 @@ const find = async (pred, ms = 20000) => {
   }
   return null;
 };
-const state = () => app.evaluate(() => globalThis.__memoraTest.state());
+const state = () => app.evaluate(() => globalThis.__blackmoaTest.state());
 const waitState = async (pred, ms = 20000) => {
   const end = Date.now() + ms;
   while (Date.now() < end) {
@@ -71,10 +71,10 @@ shell.on('pageerror', (e) => errors.push(String(e).slice(0, 160)));
 await sleep(4000);
 
 // ── 로그인 ──
-let chat = await find((u) => u.startsWith('https://memo-ora.com'));
-say(!!chat, '대화의 문은 memo-ora.com 이다', chat?.url());
+let chat = await find((u) => u.startsWith('https://black.memo-ora.com'));
+say(!!chat, '대화의 문은 black.memo-ora.com 이다', chat?.url());
 const host = await chat.evaluate(() => {
-  const h = window.__memoraHost;
+  const h = window.__blackmoaHost;
   return h ? { keys: Object.keys(h).sort().join(','), shell: h.shell, door: h.door } : null;
 });
 say(host?.shell === 2 && host?.door === 'chat', '웹 뷰는 제 문과 틀 세대를 안다', JSON.stringify(host));
@@ -83,8 +83,8 @@ if (chat.url().includes('/login')) {
   const s0 = await waitState((s) => !s.restoring);
   say(!s0.signedIn, '로그인 전에는 틀이 접힌다(아이콘 막대 없음)');
   shot('d1-login');
-  await chat.fill('input[type=email]', process.env.MEMORA_EMAIL);
-  await chat.fill('input[type=password]', process.env.MEMORA_PASSWORD);
+  await chat.fill('input[type=email]', process.env.BLACKMOA_EMAIL);
+  await chat.fill('input[type=password]', process.env.BLACKMOA_PASSWORD);
   await chat.click('button[type=submit]');
 }
 const s1 = await waitState((s) => s.signedIn && s.agents.length > 0);
@@ -122,7 +122,7 @@ shot('d4-community');
 // ── 링크 규칙 ──
 // 다른 문으로: 커뮤니티 뷰에서 사람의 페이지 → 소식의 문으로 옮긴다.
 const before = (await state()).pane;
-await comm.evaluate(() => window.__memoraHost.navigate('/app/feed'));
+await comm.evaluate(() => window.__blackmoaHost.navigate('/app/feed'));
 const s2 = await waitState((s) => s.pane === 'feed', 5000);
 say(before === 'community' && s2.pane === 'feed', '다른 문의 주소는 앱이 그 문으로 옮긴다');
 // 문 밖으로: 스케줄은 브라우저가 연다. 링크를 누른 것처럼.
@@ -148,7 +148,7 @@ await sleep(1500);
 shot('d6-settings');
 
 // ── 빠른 대화 ──
-await shell.evaluate(() => window.memora.shell.openQuick());
+await shell.evaluate(() => window.blackmoa.shell.openQuick());
 const quick = await find((u) => u.includes('quick.html'), 8000);
 say(!!quick, '빠른 대화 창이 뜬다');
 if (quick && process.env.TALK) {
@@ -168,7 +168,7 @@ if (quick && process.env.TALK) {
   let a = null;
   for (let i = 0; i < 120; i++) {
     await sleep(1000);
-    a = await app.evaluate(() => globalThis.__memoraTest.quick());
+    a = await app.evaluate(() => globalThis.__blackmoaTest.quick());
     if (a?.done) break;
   }
   say(!!a?.done && !a?.error && !!a?.text, '답이 흘러 끝난다', a?.error ?? a?.text?.slice(0, 30));
@@ -186,19 +186,19 @@ if (quick && process.env.TALK) {
   }
   say(seen, '빠른 대화에서 한 말이 대화의 문에 곧바로 있다(누르지 않아도)');
   say(landed, '그 답도 곧바로 있다', a?.text?.slice(0, 30));
-  await shell.evaluate(() => window.memora.shell.select('chat'));
+  await shell.evaluate(() => window.blackmoa.shell.select('chat'));
   await sleep(1500);
   shot('d8-continue');
 }
 
 // ── 아바타와 먼저 건넨 말 ──
 // 빠른 대화에서 물었으면 아바타는 이미 떠 있다(plan/69). 켜는 길을 시험하려고 먼저 내린다.
-if ((await app.evaluate(() => globalThis.__memoraTest.state().avatarOn))) {
-  await shell.evaluate(() => window.memora.shell.toggleAvatar());
+if ((await app.evaluate(() => globalThis.__blackmoaTest.state().avatarOn))) {
+  await shell.evaluate(() => window.blackmoa.shell.toggleAvatar());
   await waitState((s) => !s.avatarOn, 5000);
   await sleep(800);
 }
-await shell.evaluate(() => window.memora.shell.toggleAvatar());
+await shell.evaluate(() => window.blackmoa.shell.toggleAvatar());
 const av = await find((u) => u.includes('avatar.html'), 10000);
 say(!!av, '아바타가 뜬다');
 const s4 = await waitState((s) => s.avatarOn, 5000);
@@ -207,7 +207,7 @@ await sleep(2000);
 const agentId = s4.agent?.id;
 await app.evaluate(
   (_e, id) =>
-    globalThis.__memoraTest.live('message', {
+    globalThis.__blackmoaTest.live('message', {
       conversation_id: null,
       agent_id: id,
       audience: 'owner',
@@ -233,7 +233,7 @@ if (process.env.HOLD_S) {
 
 // ── 로그아웃 ──
 if (process.env.SIGNOUT) {
-  await shell.evaluate(() => window.memora.shell.signOut());
+  await shell.evaluate(() => window.blackmoa.shell.signOut());
   const s5 = await waitState((s) => !s.signedIn && !s.restoring, 15000);
   say(!s5.signedIn, '로그아웃하면 틀이 접힌다');
   await sleep(2500);

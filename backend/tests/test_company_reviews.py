@@ -22,9 +22,9 @@ async def make_company(name: str, *, market: str = "코스닥", industry: str = 
                        codes: list[str] | None = None, homepage: str = "https://example.com") -> str:
     from datetime import date
 
-    from memora.db.session import session_scope
-    from memora.models import Company
-    from memora.services.companies.merge import normalise_name
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Company
+    from blackmoa.services.companies.merge import normalise_name
 
     tail = _uuid.uuid4().hex[:6]
     async with session_scope("worker") as db:
@@ -151,8 +151,8 @@ async def test_deleting_and_hiding_take_the_review_out_of_the_numbers(client: As
     # Moderation: a reported review hidden from the console leaves the numbers too.
     rid = (await client.post(f"/api/community/companies/{cid}/reviews", json=review_body(), headers=auth(other))).json()["review"]["id"]
     assert (await client.post(f"/api/community/companies/reviews/{rid}/report", json={"reason": "abuse"}, headers=auth(tok))).status_code == 201
-    from memora.db.session import session_scope
-    from memora.services import community as C
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import community as C
     async with session_scope("worker") as db:
         reports = await C.admin_reports(db, status="open")
         mine = next(r for r in reports if r["target"]["id"] == rid)
@@ -191,11 +191,11 @@ async def test_the_dashboard_has_something_to_say_before_anyone_has_reviewed(cli
     await make_company("인기유가", market="유가")
     b = await make_company("연봉공고", codes=["it.game"])
     await make_company("상장셋째")   # three listed companies: the "newly listed" shelf's minimum
-    from memora.db.session import session_scope
-    from memora.services import community as C
-    from memora.services.companies.reviews import rank_all
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import community as C
+    from blackmoa.services.companies.reviews import rank_all
     async with session_scope("worker") as db:
-        from memora.models import User
+        from blackmoa.models import User
         u = (await db.execute(__import__("sqlalchemy").select(User).limit(1))).scalars().first()
         job = await C.create_job(db, user=u, data={"title": "게임 서버 개발자", "company": "연봉공고", "company_id": b,
                                                    "salary_min": 7000, "salary_max": 9000, "job_codes": ["dev.game"],
@@ -209,7 +209,7 @@ async def test_the_dashboard_has_something_to_say_before_anyone_has_reviewed(cli
     assert len(h["salary_top"]) >= 1 and all(it["source"] in ("reviews", "jobs") for it in h["salary_top"])
     # The shelf holds three; other tests may already have filled them with reviewed
     # companies, so the fallback is checked where it cannot be crowded out.
-    from memora.services.companies.reviews import salary_top
+    from blackmoa.services.companies.reviews import salary_top
     async with session_scope("worker") as db:
         wide = await salary_top(db, u, limit=50)
     pick = next(it for it in wide if it["company"]["id"] == b)
@@ -231,7 +231,7 @@ async def test_the_dashboard_has_something_to_say_before_anyone_has_reviewed(cli
     assert h["for_me"]["job_labels"] == ["게임 개발"]
     # The posting must not outlive the test: the job board's own tests count open postings.
     async with session_scope("worker") as db:
-        from memora.models import CommunityJob
+        from blackmoa.models import CommunityJob
         j = await db.get(CommunityJob, job_id)
         await C.close_job(db, job=j, user=u)
         await db.commit()
@@ -292,10 +292,10 @@ async def test_followers_hear_about_new_reviews_and_postings(client: AsyncClient
     inbox = (await client.get("/api/inbox", headers=auth(fan))).json()["items"]
     assert len([it for it in inbox if it["kind"] == "company_review" and it["payload"]["company_id"] == cid]) == 2
     assert not [it for it in (await client.get("/api/inbox", headers=auth(writer))).json()["items"] if it["kind"] == "company_review"]
-    from memora.db.session import session_scope
-    from memora.services import community as C
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import community as C
     async with session_scope("worker") as db:
-        from memora.models import User
+        from blackmoa.models import User
         u = await db.get(User, _uuid.UUID((await client.get("/api/auth/me", headers=auth(writer))).json()["id"]))
         job = await C.create_job(db, user=u, data={"title": "팔로우 테스트 공고", "company": "팔로우전자", "company_id": cid,
                                                    "job_codes": ["dev.backend"], "region_codes": ["11"]})
@@ -305,7 +305,7 @@ async def test_followers_hear_about_new_reviews_and_postings(client: AsyncClient
     jobs = [it for it in inbox if it["kind"] == "company_job" and it["payload"]["company_id"] == cid]
     assert len(jobs) == 1 and jobs[0]["payload"]["title"] == "팔로우 테스트 공고"
     async with session_scope("worker") as db:
-        from memora.models import CommunityJob
+        from blackmoa.models import CommunityJob
         await C.close_job(db, job=await db.get(CommunityJob, job_id), user=u)
         await db.commit()
 
@@ -363,7 +363,7 @@ async def test_the_secretary_can_look_a_company_up_and_shows_a_card(client: Asyn
     # What the model actually receives: the review's words, never who wrote them.
     from types import SimpleNamespace
 
-    from memora.pipeline.tools.company_tools import CompanyLookup
+    from blackmoa.pipeline.tools.company_tools import CompanyLookup
     emitted: list = []
     tool = CompanyLookup(SimpleNamespace(card=lambda kind, payload: emitted.append((kind, payload))))  # type: ignore[arg-type]
     out = await tool.run({"name": name[:6]})
@@ -390,7 +390,7 @@ def answers_body(**over) -> dict:
 async def test_answers_become_scores_facts_and_the_old_booleans(client: AsyncClient):
     """The form asks concrete questions; every number the page shows is derived from them,
     and the facts a reader wants ("주 45~52시간") are tallied per company."""
-    from memora.services.companies import questions as Q
+    from blackmoa.services.companies import questions as Q
 
     _, tok = await signup(client)
     cid = await make_company("질문전자")
@@ -431,9 +431,9 @@ async def test_the_dashboard_ranks_companies_by_each_of_our_five_areas(client: A
     assert list(areas) == ["pay", "balance", "culture", "promotion", "management"]
     assert all(len(v) <= 5 and all({"score", "fact", "review_count"} <= set(c) for c in v) for v in areas.values())
     # The ranking itself, over the whole shared test database rather than the top five.
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services.companies.reviews import area_top
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services.companies.reviews import area_top
     async with session_scope("worker") as db:
         me = await db.get(User, _uuid.UUID((await client.get("/api/auth/me", headers=auth(tok))).json()["id"]))
         pay = [c["id"] for c in await area_top(db, me, "pay", limit=1000)]

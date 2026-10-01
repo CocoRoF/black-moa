@@ -26,7 +26,7 @@ type Tab = "overview" | "reviews" | "salary" | "interview" | "benefits" | "hirin
 const TABS: Tab[] = ["overview", "reviews", "salary", "interview", "benefits", "hiring", "community"];
 
 /** A company's page (plan/40). Laid out like a profile: who the company is on the left,
- *  what people say about it on the right. The identity column is Memora's own panel — the
+ *  what people say about it on the right. The identity column is black-moa's own panel — the
  *  cover strip, the mark on its edge, the facts underneath — and stays put while the
  *  sections change. */
 export function CompanyPage({ id }: { id: string }) {
@@ -121,7 +121,7 @@ function IdentityCard({ d, onWrite }: { d: CompanyDetailData; onWrite: () => voi
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Button variant="accent" onClick={onWrite}><PenLine className="h-4 w-4" />{t(d.my_review ? "cx.edit_review" : "cx.write_review")}</Button>
           <FollowButton id={c.id} following={c.following} count={c.follow_count} size="md" showCount />
-          {/* Memora's own two: the reader's secretary can brief them on this company, and
+          {/* black-moa's own two: the reader's secretary can brief them on this company, and
               a company can be weighed against others (plan/40 §7). */}
           <Link href={`/app/chat?draft=${encodeURIComponent(t("cx.ask_secretary_draft", { name: c.name }))}`}
                 className={buttonLook("outline", "md", "w-full")}>
@@ -190,8 +190,8 @@ function Overview({ id, d, onWrite, onTab }: { id: string; d: CompanyDetailData;
   );
 }
 
-/** The reader's own field, at this company: only Memora knows what the reader does for a
- *  living, so only Memora can show a company through those eyes (plan/40 §7). */
+/** The reader's own field, at this company: only black-moa knows what the reader does for a
+ *  living, so only black-moa can show a company through those eyes (plan/40 §7). */
 function MyJobPanel({ job, onTab, onWrite }: { job: NonNullable<CompanyDetailData["my_job"]>; onTab: (k: Tab) => void; onWrite: () => void }) {
   const t = useT(); const locale = useLocale();
   const st = job.stats;

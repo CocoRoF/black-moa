@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 메모라 웹의 색(frontend/app/globals.css)을 그대로 쓴다. 틀과 문 안쪽이 한 제품으로 보여야 한다. */
+/* 블랙모아 웹의 색(frontend/app/globals.css)을 그대로 쓴다. 틀과 문 안쪽이 한 제품으로 보여야 한다. */
 :root {
   color-scheme: light;
   --bg: #f7f7f9;
@@ -113,7 +113,7 @@ body.quick-body {
   -webkit-app-region: no-drag;
 }
 
-/* Dex 의 활성 표시: 왼쪽의 2px 막대, 메모라의 두 브랜드 색으로. */
+/* Dex 의 활성 표시: 왼쪽의 2px 막대, 블랙모아의 두 브랜드 색으로. */
 .active-bar {
   background: linear-gradient(180deg, var(--brand-sky), var(--brand-violet));
 }

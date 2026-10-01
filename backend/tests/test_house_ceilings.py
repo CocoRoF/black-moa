@@ -17,7 +17,7 @@ async def test_reaching_one_person_over_and_over_stops(client: AsyncClient, monk
     닿는 일이다: 연결할 때마다 그 사람 인박스에 한 줄이 남으니, 끊었다 잇기를 되풀이하면
     그 줄이 계속 쌓인다. 다른 사람들과는 아무 상관이 없어야 한다.
     """
-    import memora.services.blog as B
+    import blackmoa.services.blog as B
 
     me, tok = await signup(client)
     a, _ = await signup(client, name="상대 가")
@@ -43,8 +43,8 @@ async def test_a_mail_channel_is_silent_until_the_address_is_proven(client: Asyn
     """
     import uuid as _u
 
-    from memora.db.session import session_scope
-    from memora.models import NotificationChannel
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import NotificationChannel
 
     user, tok = await signup(client)
     ch = (await client.post("/api/notifications/channels", headers=auth(tok),
@@ -75,7 +75,7 @@ async def test_a_post_reply_does_not_become_a_fact_about_the_owner(client: Async
     """
     import inspect
 
-    import memora.pipeline.runner as R
+    import blackmoa.pipeline.runner as R
 
     src = inspect.getsource(R._finalize) if hasattr(R, "_finalize") else inspect.getsource(R)
     # 증류를 거는 자리에 simulated 가드가 서 있어야 한다.
@@ -84,7 +84,7 @@ async def test_a_post_reply_does_not_become_a_fact_about_the_owner(client: Async
 
 async def test_the_owner_cannot_set_how_fast_the_relationship_grows(client: AsyncClient):
     """관계가 자라는 빠르기를 그 관계를 맺는 사람이 정할 수 있으면 관계가 아니라 설정이다."""
-    from memora.pipeline.personas import relationship_params
+    from blackmoa.pipeline.personas import relationship_params
 
     for asked in ("fast", "slow", "normal", "nonsense"):
         assert relationship_params({"relationship": {"pace": asked}})["pace"] == "normal", asked

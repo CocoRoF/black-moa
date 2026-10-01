@@ -37,7 +37,7 @@ async def test_the_four_states_seen_from_both_sides(client: AsyncClient):
 
 
 async def test_every_change_is_announced_to_both_people(client: AsyncClient, monkeypatch):
-    from memora.core import bus
+    from blackmoa.core import bus
 
     sent: list[tuple[str, str, dict]] = []
 

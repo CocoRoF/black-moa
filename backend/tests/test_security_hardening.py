@@ -8,11 +8,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from memora.core.errors import Forbidden, PaymentRequired
-from memora.pipeline.events import _visitor_projection
-from memora.pipeline.guard import redact_response
-from memora.services import accounts as A
-from memora.services import profile as PF
+from blackmoa.core.errors import Forbidden, PaymentRequired
+from blackmoa.pipeline.events import _visitor_projection
+from blackmoa.pipeline.guard import redact_response
+from blackmoa.services import accounts as A
+from blackmoa.services import profile as PF
 from tests.conftest import auth, signup
 
 
@@ -114,8 +114,8 @@ async def test_notification_rule_rejects_foreign_channel(client):
 
 @pytest.mark.asyncio
 async def test_turn_credit_reservations_never_overcommit(client):
-    from memora.db.session import session_scope
-    from memora.services import credits as CR
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import credits as CR
 
     user, _ = await signup(client)
     owner_id = uuid.UUID(user["id"])
@@ -183,7 +183,7 @@ async def test_turn_credit_reservations_never_overcommit(client):
 
 @pytest.mark.asyncio
 async def test_turnstile_configuration_fails_closed(monkeypatch):
-    from memora.api import public as PUB
+    from blackmoa.api import public as PUB
 
     async def missing(*args, **kwargs):
         return ""
@@ -196,7 +196,7 @@ async def test_turnstile_configuration_fails_closed(monkeypatch):
 
 
 def test_safe_http_rejects_mixed_public_private_dns(monkeypatch):
-    from memora.services import safe_http as SH
+    from blackmoa.services import safe_http as SH
 
     monkeypatch.setattr(SH, "get_settings", lambda: SimpleNamespace(outbound_allowed_ports="80,443"))
     monkeypatch.setattr(
@@ -213,7 +213,7 @@ def test_safe_http_rejects_mixed_public_private_dns(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_safe_http_connects_to_the_validated_ip(monkeypatch):
-    from memora.services import safe_http as SH
+    from blackmoa.services import safe_http as SH
 
     target = SH._Target(
         url="http://example.com/hello",
@@ -260,13 +260,13 @@ async def test_safe_http_connects_to_the_validated_ip(monkeypatch):
 
 
 def test_parser_child_env_does_not_inherit_application_secrets(monkeypatch):
-    from memora.services import extract as EX
+    from blackmoa.services import extract as EX
 
-    monkeypatch.setenv("MEMORA_DATABASE_URL", "postgresql://contains-secret")
+    monkeypatch.setenv("BLACKMOA_DATABASE_URL", "postgresql://contains-secret")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "contains-secret")
 
     def fake_run(*args, **kwargs):
-        assert "MEMORA_DATABASE_URL" not in kwargs["env"]
+        assert "BLACKMOA_DATABASE_URL" not in kwargs["env"]
         assert "ANTHROPIC_API_KEY" not in kwargs["env"]
         return SimpleNamespace(
             returncode=0,
@@ -281,7 +281,7 @@ def test_parser_child_env_does_not_inherit_application_secrets(monkeypatch):
 def test_fernet_rotation_decrypts_previous_but_encrypts_primary(monkeypatch):
     from cryptography.fernet import Fernet
 
-    from memora.core import security as SEC
+    from blackmoa.core import security as SEC
 
     old_key = Fernet.generate_key()
     new_key = Fernet.generate_key()
@@ -299,7 +299,7 @@ def test_fernet_rotation_decrypts_previous_but_encrypts_primary(monkeypatch):
 
 
 def test_https_production_rejects_dev_secret(monkeypatch):
-    from memora.core import security as SEC
+    from blackmoa.core import security as SEC
 
     settings = SimpleNamespace(
         encryption_key="",
@@ -308,7 +308,7 @@ def test_https_production_rejects_dev_secret(monkeypatch):
         public_url="https://secretary.example",
     )
     monkeypatch.setattr(SEC, "get_settings", lambda: settings)
-    with pytest.raises(RuntimeError, match="MEMORA_SECRET_KEY"):
+    with pytest.raises(RuntimeError, match="BLACKMOA_SECRET_KEY"):
         SEC.validate_security_settings()
 
 
@@ -426,10 +426,10 @@ async def test_secretary_email_is_gated_by_a_verified_owner_and_a_daily_cap(clie
     """
     from unittest.mock import AsyncMock, patch
 
-    from memora.core.errors import Forbidden, ValidationFailed
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import outbound_mail as OM
+    from blackmoa.core.errors import Forbidden, ValidationFailed
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import outbound_mail as OM
     from tests.conftest import signup
 
     user, _tok = await signup(client, name="유지수")
@@ -449,7 +449,7 @@ async def test_secretary_email_is_gated_by_a_verified_owner_and_a_daily_cap(clie
     async def fake_send(_db, **kw):
         sent.append(kw)
 
-    with patch("memora.services.outbound_mail.send_mail", AsyncMock(side_effect=fake_send)):
+    with patch("blackmoa.services.outbound_mail.send_mail", AsyncMock(side_effect=fake_send)):
         async with session_scope() as db:
             owner = await db.get(User, uid)
             out = await OM.send_as_owner(db, owner=owner, agent_name="Soo", to=" Someone@Example.com ",
@@ -474,12 +474,12 @@ async def test_secretary_email_is_gated_by_a_verified_owner_and_a_daily_cap(clie
         assert await OM.sent_today(db, uid) == 1
         owner = await db.get(User, uid)
         for i in range(OM.DAILY_CAP - 1):
-            with patch("memora.services.outbound_mail.send_mail", AsyncMock()):
+            with patch("blackmoa.services.outbound_mail.send_mail", AsyncMock()):
                 await OM.send_as_owner(db, owner=owner, agent_name="Soo", to=f"x{i}@example.com", subject="s", body="b")
         await db.commit()
     async with session_scope() as db:
         owner = await db.get(User, uid)
-        with patch("memora.services.outbound_mail.send_mail", AsyncMock()):
+        with patch("blackmoa.services.outbound_mail.send_mail", AsyncMock()):
             with pytest.raises(Forbidden) as capped:
                 await OM.send_as_owner(db, owner=owner, agent_name="Soo", to="last@example.com", subject="s", body="b")
         assert capped.value.code == "email_quota_exhausted"
@@ -487,7 +487,7 @@ async def test_secretary_email_is_gated_by_a_verified_owner_and_a_daily_cap(clie
 
 async def test_only_the_owner_can_make_a_secretary_send_mail(client, app):
     """A visitor with this tool would be a spam cannon wearing someone else's name."""
-    from memora.pipeline.tools import all_tools
+    from blackmoa.pipeline.tools import all_tools
 
     tool = all_tools()["email_send"]
     assert tool.audiences == frozenset({"owner"})
@@ -495,8 +495,8 @@ async def test_only_the_owner_can_make_a_secretary_send_mail(client, app):
     # 외부인 대화에는 어떤 설정으로도 열리지 않는다: 스위치가 아니라 대상(audience)이 막는다.
     from types import SimpleNamespace
 
-    from memora.pipeline.tools.base import _allowed
-    from memora.services import outsider as OUT
+    from blackmoa.pipeline.tools.base import _allowed
+    from blackmoa.services import outsider as OUT
     agent = SimpleNamespace(capabilities={"email_send": True}, outsider={k: ("public" if k in OUT.LEVELED else True)
                                                                           for k in (*OUT.LEVELED, *OUT.SWITCHES)})
     visitor = SimpleNamespace(audience="visitor", relay_id=None, features={"feature:mail"}, agent=agent)
@@ -507,10 +507,10 @@ async def test_only_the_owner_can_make_a_secretary_send_mail(client, app):
 async def test_a_mail_handle_is_unique_and_never_a_system_address(client, app):
     """The handle becomes a real mailbox, so two people cannot hold one and nobody can
     take an address the mail system itself answers to."""
-    from memora.core.errors import Conflict, ValidationFailed
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import outbound_mail as OM
+    from blackmoa.core.errors import Conflict, ValidationFailed
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import outbound_mail as OM
     from tests.conftest import signup
 
     a, _ = await signup(client)
@@ -540,17 +540,17 @@ async def test_a_secretary_sends_from_its_owners_own_address(client, app):
     """And only ever on our sending domain — that is where SPF and DKIM are published."""
     from unittest.mock import AsyncMock, patch
 
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import outbound_mail as OM
-    from memora.services import settings as S
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import outbound_mail as OM
+    from blackmoa.services import settings as S
     from tests.conftest import signup
 
     user, _ = await signup(client)
     async with session_scope() as db:
         await S.put(db, "smtp.host", "smtp.example.net")
-        await S.put(db, "smtp.from", "Memora <no-reply@memo-ora.com>")
-        await S.put(db, "smtp.from_agent", "Memora <memora@memo-ora.com>")
+        await S.put(db, "smtp.from", "black-moa <no-reply@black.memo-ora.com>")
+        await S.put(db, "smtp.from_agent", "black-moa <blackmoa@black.memo-ora.com>")
         owner = await db.get(User, uuid.UUID(user["id"]))
         owner.email_verified_at = datetime.now(UTC)
         # A handle is unique across the database, and the suite shares one.
@@ -559,16 +559,16 @@ async def test_a_secretary_sends_from_its_owners_own_address(client, app):
         await db.commit()
 
     sent: list[dict] = []
-    with patch("memora.services.outbound_mail.send_mail", AsyncMock(side_effect=lambda _db, **kw: sent.append(kw))):
+    with patch("blackmoa.services.outbound_mail.send_mail", AsyncMock(side_effect=lambda _db, **kw: sent.append(kw))):
         async with session_scope() as db:
             owner = await db.get(User, uuid.UUID(user["id"]))
             out = await OM.send_as_owner(db, owner=owner, agent_name="제니", to="someone@example.com",
                                          subject="안녕하세요", body="본문")
             await db.commit()
-    assert out["from"] == f"{handle}@memo-ora.com"
-    assert sent[0]["from_address"] == f"{handle}@memo-ora.com"
+    assert out["from"] == f"{handle}@black.memo-ora.com"
+    assert sent[0]["from_address"] == f"{handle}@black.memo-ora.com"
 
     # A mailbox on someone else's domain is refused by the mailer, not merely discouraged.
-    from memora.services.mailer import _domain
-    assert _domain(f"{handle}@memo-ora.com") == _domain("Memora <memora@memo-ora.com>")
-    assert _domain(f"{handle}@evil.example") != _domain("Memora <memora@memo-ora.com>")
+    from blackmoa.services.mailer import _domain
+    assert _domain(f"{handle}@black.memo-ora.com") == _domain("black-moa <blackmoa@black.memo-ora.com>")
+    assert _domain(f"{handle}@evil.example") != _domain("black-moa <blackmoa@black.memo-ora.com>")

@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!data) return { robots: { index: false } };
   const f = data.fields ?? {};
   const line = [f.title, f.company].filter(Boolean).join(" \u00b7 ");
-  const site = process.env.PUBLIC_URL || process.env.MEMORA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL;
+  const site = process.env.PUBLIC_URL || process.env.BLACKMOA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL;
   const title = `${data.display_name} (@${data.handle})`;
   const s = data.secretary;
   // Repeating the name in the line under it tells a reader nothing. When the person has

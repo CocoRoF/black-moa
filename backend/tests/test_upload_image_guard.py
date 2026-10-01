@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from memora.core.errors import ValidationFailed
-from memora.services.uploads import _resize_image, _sniff
+from blackmoa.core.errors import ValidationFailed
+from blackmoa.services.uploads import _resize_image, _sniff
 
 
 def test_magic_prefixed_but_malformed_image_fails_closed():

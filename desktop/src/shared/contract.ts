@@ -1,12 +1,12 @@
 /**
  * 메인과 앱이 직접 그리는 창(틀·아바타·빠른 대화)이 주고받는 것의 전부.
  *
- * 세 문(비서와 대화·소식·커뮤니티)의 안쪽은 memo-ora.com 이 "앱 모드" 로 그린다(plan/62).
- * 그쪽과의 약속은 `preload/host.ts` 의 `__memoraHost` 하나다.
+ * 세 문(비서와 대화·소식·커뮤니티)의 안쪽은 black.memo-ora.com 이 "앱 모드" 로 그린다(plan/62).
+ * 그쪽과의 약속은 `preload/host.ts` 의 `__blackmoaHost` 하나다.
  */
 
 /** 고정이다. 설정으로도 못 바꾼다. */
-export const ORIGIN = 'https://memo-ora.com';
+export const ORIGIN = 'https://black.memo-ora.com';
 
 /** 앱의 틀 세대. 웹은 이 값이 2 이상일 때만 앱 모드로 그린다. */
 export const SHELL_GEN = 2;
@@ -334,7 +334,7 @@ export interface SayState {
 
 // ───────────────────────── 다리 ─────────────────────────
 
-/** preload 가 `window.memora` 로 내놓는 것. 앱이 직접 그리는 창 셋이 함께 쓴다. */
+/** preload 가 `window.blackmoa` 로 내놓는 것. 앱이 직접 그리는 창 셋이 함께 쓴다. */
 export interface Bridge {
   platform: string;
   /** 지금 어두운 화면인가. 창이 뜰 때 한 번 읽고, 바뀌면 onTheme 으로 온다. */

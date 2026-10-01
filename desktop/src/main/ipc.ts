@@ -47,7 +47,7 @@ const EDGES: readonly ResizeEdge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'
 const COMMANDS: readonly AvatarCommand[] = ['mic', 'stop', 'reply'];
 /** 사진 모양의 열쇠는 그 사진의 주소 — 우리 서버가 내어 주는 두 자리만. */
 const okImage = (u: unknown): u is string =>
-  typeof u === 'string' && /^(https:\/\/memo-ora\.com)?\/(api\/public\/uploads\/[0-9a-fA-F-]{36}|presets\/[A-Za-z0-9_-]{1,64}\.png)(\?v=\d{1,4})?$/.test(u);
+  typeof u === 'string' && /^(https:\/\/black\.memo-ora\.com)?\/(api\/public\/uploads\/[0-9a-fA-F-]{36}|presets\/[A-Za-z0-9_-]{1,64}\.png)(\?v=\d{1,4})?$/.test(u);
 
 function noAgent(): never {
   throw Object.assign(new Error('어느 비서인지 모르겠어요.'), { code: 'no_agent' });

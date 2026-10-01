@@ -417,7 +417,7 @@ export function AvatarWindow() {
             </div>
           </div>
         ) : loading ? null : (
-          // 그림이 없으면(아직 안 정했거나 받지 못했다) 메모라의 표식을 세운다.
+          // 그림이 없으면(아직 안 정했거나 받지 못했다) 블랙모아의 표식을 세운다.
           <img
             data-hit
             src={mark}

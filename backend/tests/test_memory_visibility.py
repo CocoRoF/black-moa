@@ -11,7 +11,7 @@ import uuid
 
 import pytest
 
-from memora.memory.facade import AgentMemory, note_level
+from blackmoa.memory.facade import AgentMemory, note_level
 
 #: 금고의 판정은 파일을 읽지 않고 규칙만 보므로 대부분 동기 함수다. 원장 요약만
 #: 서버를 태운다.
@@ -57,7 +57,7 @@ def test_a_visitor_never_reads_another_visitors_memory():
 
 def test_a_new_memory_is_private_until_somebody_says_otherwise():
     """고르지 않은 것이 공개되면 안 된다."""
-    from memora.core import visibility as VIS
+    from blackmoa.core import visibility as VIS
 
     assert VIS.normalize(None) == "private"
     assert VIS.normalize("") == "private"
@@ -81,10 +81,10 @@ async def test_a_fact_belongs_to_the_secretary_that_learned_it(client):
     """
     import uuid as _u
 
-    from memora.db.session import session_scope
-    from memora.models import Fact
-    from memora.pipeline.runner import _facts_block
-    from memora.services import outsider as OUT
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Fact
+    from blackmoa.pipeline.runner import _facts_block
+    from blackmoa.services import outsider as OUT
     from tests.conftest import auth, signup
 
     user, tok = await signup(client)
@@ -96,7 +96,7 @@ async def test_a_fact_belongs_to_the_secretary_that_learned_it(client):
     async with session_scope() as db:
         # 두 번째 비서는 요금제 상한에 걸리므로 직접 만든다. 이 검사가 보려는 것은
         # 비서를 몇 개까지 만들 수 있나가 아니라, 사실이 어느 비서에게 붙느냐다.
-        from memora.models import Agent
+        from blackmoa.models import Agent
         second = Agent(id=_u.uuid4(), owner_id=oid, name="둘", status="active")
         db.add(second)
         await db.commit()

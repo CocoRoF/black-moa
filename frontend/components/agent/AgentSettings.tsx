@@ -44,8 +44,8 @@ export function AgentSettings() {
   const [delOpen, setDelOpen] = useState(false); const [delName, setDelName] = useState("");
   // Studio (plan/37): the easy mode shows what shapes the character; the advanced mode shows everything.
   const [mode, setMode] = useState<"easy" | "advanced">("easy");
-  useEffect(() => { if (storageGet("local", "memora:studio:mode") === "advanced") setMode("advanced"); }, []);
-  const pickMode = (m: "easy" | "advanced") => { setMode(m); storageSet("local", "memora:studio:mode", m); };
+  useEffect(() => { if (storageGet("local", "blackmoa:studio:mode") === "advanced") setMode("advanced"); }, []);
+  const pickMode = (m: "easy" | "advanced") => { setMode(m); storageSet("local", "blackmoa:studio:mode", m); };
   const adv = mode === "advanced";
   const [verifyOpen, setVerifyOpen] = useState(false);
   useEffect(() => { setD(agent); }, [agent]);

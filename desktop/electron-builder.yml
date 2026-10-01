@@ -1,12 +1,12 @@
-appId: com.memora.desktop
+appId: com.blackmoa.desktop
 # 설치 경로는 productName 에서 나온다. 다른 패키지가 같은 /opt 를 가지면 dpkg 가
 # 설치를 거부하므로, 흔한 이름을 피해 이 앱만의 이름을 쓴다.
-productName: Memora
+productName: black-moa
 copyright: Apache-2.0
 
-# 어떤 운영체제든 한 가지 규칙으로 읽히게 한다: Memora_<os>_<버전>.<확장자>
+# 어떤 운영체제든 한 가지 규칙으로 읽히게 한다: black-moa_<os>_<버전>.<확장자>
 # 기본값에 맡기면 설치본마다 이름 짓는 방식이 달라진다.
-artifactName: Memora_${os}_${version}.${ext}
+artifactName: black-moa_${os}_${version}.${ext}
 directories:
   output: release
   buildResources: build
@@ -30,7 +30,7 @@ mac:
   category: public.app-category.productivity
   # Apple 칩과 Intel 을 한 파일(universal)에 담는다. 칩마다 파일이 따로 있으면 받는 사람이 무엇을 골라야 할지
   # 헤맨다(plan/64). 이름에는 universal 이 들어간다.
-  artifactName: Memora_macos_${arch}_${version}.${ext}
+  artifactName: black-moa_macos_${arch}_${version}.${ext}
   target:
     - target: dmg
       arch: [universal]
@@ -43,7 +43,7 @@ mac:
     NSMicrophoneUsageDescription: 비서에게 말로 물어보려면 마이크가 필요해요.
 
 win:
-  artifactName: Memora_windows_${version}.${ext}
+  artifactName: black-moa_windows_${version}.${ext}
   target:
     - target: nsis
       arch: [x64]
@@ -57,7 +57,7 @@ nsis:
   deleteAppDataOnUninstall: false
 
 linux:
-  artifactName: Memora_linux_${version}.${ext}
+  artifactName: black-moa_linux_${version}.${ext}
   # 설치 프로그램(.deb) 하나만. AppImage 는 설치 프로그램이 아니고, 둘을 함께 내놓으면 받는 사람이 헤맨다(plan/64).
   target:
     - target: deb
@@ -71,9 +71,9 @@ linux:
   synopsis: 내 비서가 늘 곁에 있는 앱
   desktop:
     entry:
-      Name: Memora
+      Name: black-moa
       Categories: Network;Utility;
-      StartupWMClass: Memora
+      StartupWMClass: black-moa
 
 deb:
   depends:
@@ -89,5 +89,5 @@ deb:
 publish:
   provider: github
   owner: CocoRoF
-  repo: my-first-secretary-geny
+  repo: black-moa
   releaseType: release

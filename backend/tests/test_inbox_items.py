@@ -13,8 +13,8 @@ from tests.conftest import auth, signup
 
 
 async def test_an_old_relay_notice_learns_who_the_other_side_was(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import AgentRelay, InboxItem
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentRelay, InboxItem
 
     a, a_tok = await signup(client, name="가온")
     b, _ = await signup(client, name="나윤")

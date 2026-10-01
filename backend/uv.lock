@@ -1507,7 +1507,7 @@ wheels = [
 ]
 
 [[package]]
-name = "memora"
+name = "blackmoa"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

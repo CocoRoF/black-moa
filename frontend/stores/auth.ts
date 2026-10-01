@@ -40,8 +40,8 @@ interface AuthState {
   hydrate: () => void;
 }
 
-const KEY_U = "memora:user";
-const VISIT_PREFIX = "memora:v:";
+const KEY_U = "blackmoa:user";
+const VISIT_PREFIX = "blackmoa:v:";
 
 /** 앱에게 지금 토큰을 알려 준다.
  *
@@ -78,7 +78,7 @@ export const useAuth = create<AuthState>((set) => ({
     // reload-persistent bearer credential from Web Storage; reload/session
     // recovery is performed through the HttpOnly refresh cookie instead.
     storageSet("session", KEY_U, JSON.stringify(user));
-    storageSet("local", "memora:had-session", "1");
+    storageSet("local", "blackmoa:had-session", "1");
     tellHost(token);
     set({ token, user, hydrated: true });
   },
@@ -88,22 +88,22 @@ export const useAuth = create<AuthState>((set) => ({
   },
   clear: () => {
     // Remove the legacy key as part of migration from older frontend builds.
-    storageSet("session", "memora:access", null);
+    storageSet("session", "blackmoa:access", null);
     storageSet("session", KEY_U, null);
     // Signing out has to reach the shared-secretary pages too: a visitor session created
     // while signed in speaks under this account's name, and it must not outlive the
     // account session on this device.
     forgetBoundVisits();
-    storageSet("local", "memora:had-session", null);
+    storageSet("local", "blackmoa:had-session", null);
     tellHost(null);
     set({ token: null, user: null, hydrated: true });
   },
   hydrate: () => {
     // Only non-secret display state is restored synchronously. useSession then
-    // performs a single-flight refresh when memora:had-session is present.
+    // performs a single-flight refresh when blackmoa:had-session is present.
     const u = storageGet("session", KEY_U);
     // Proactively erase bearer tokens left behind by previous releases.
-    storageSet("session", "memora:access", null);
+    storageSet("session", "blackmoa:access", null);
     let user: User | null = null;
     try { user = u ? (JSON.parse(u) as User) : null; } catch { user = null; }
     set({ token: null, user, hydrated: true });

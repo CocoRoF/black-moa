@@ -13,12 +13,12 @@ import httpx
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import Connection, IntegrationEvent, Job
-from memora.providers.http import ProviderHTTPError
-from memora.services import calendar_sources as CS
-from memora.services import connections as CN
-from memora.services import google as G
+from blackmoa.db.session import session_scope
+from blackmoa.models import Connection, IntegrationEvent, Job
+from blackmoa.providers.http import ProviderHTTPError
+from blackmoa.services import calendar_sources as CS
+from blackmoa.services import connections as CN
+from blackmoa.services import google as G
 from tests.conftest import auth, signup
 from tests.test_calendar_sources import _connected, _google_on
 
@@ -40,7 +40,7 @@ async def test_google_pushes_a_change_and_the_calendar_is_fetched_again(client: 
     await _google_on(True)
     user, _ = await signup(client)
     cid = await _connected(user["id"], caps=["calendar_read"], scopes=[])
-    channel = f"memora-{cid.hex}-1790000000"
+    channel = f"blackmoa-{cid.hex}-1790000000"
     async with session_scope() as db:
         c = await db.get(Connection, cid)
         c.settings = {"gcal_watch": {"id": channel, "resource_id": "r1",
@@ -53,7 +53,7 @@ async def test_google_pushes_a_change_and_the_calendar_is_fetched_again(client: 
     assert r.status_code == 204 and await _jobs(cid) == []
     r = await client.post("/api/integrations/google/push", headers={**good, "X-Goog-Resource-State": "sync"})
     assert r.status_code == 204 and await _jobs(cid) == []          # 채널을 연 순간의 인사는 변경이 아니다
-    r = await client.post("/api/integrations/google/push", headers={**good, "X-Goog-Channel-ID": f"memora-{uuid.uuid4().hex}-1"})
+    r = await client.post("/api/integrations/google/push", headers={**good, "X-Goog-Channel-ID": f"blackmoa-{uuid.uuid4().hex}-1"})
     assert r.status_code == 204 and await _jobs(cid) == []
 
     r = await client.post("/api/integrations/google/push", headers=good)
@@ -153,7 +153,7 @@ async def test_opening_the_schedule_fetches_a_stale_calendar_and_mail_and_contac
 
 def test_a_channel_id_names_its_connection_and_nothing_else():
     cid = uuid.uuid4()
-    assert G.channel_conn(f"memora-{cid.hex}-1790000000") == cid
-    for bad in ("", "memora", f"other-{cid.hex}-1", f"memora-{cid.hex}", "memora-zz-1"):
+    assert G.channel_conn(f"blackmoa-{cid.hex}-1790000000") == cid
+    for bad in ("", "blackmoa", f"other-{cid.hex}-1", f"blackmoa-{cid.hex}", "blackmoa-zz-1"):
         assert G.channel_conn(bad) is None
     assert G.channel_token(cid, "a") != G.channel_token(cid, "b") and len(G.channel_token(cid, "a")) == 48

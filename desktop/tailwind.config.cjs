@@ -3,7 +3,7 @@ module.exports = {
   content: ['./src/renderer/*.html', './src/renderer/src/**/*.{ts,tsx}'],
   theme: {
     extend: {
-      // 메모라 웹과 같은 이름. 값은 styles.css 의 변수(밝게·어둡게)가 정한다.
+      // 블랙모아 웹과 같은 이름. 값은 styles.css 의 변수(밝게·어둡게)가 정한다.
       colors: {
         bg: 'var(--bg)',
         fg: 'var(--fg)',

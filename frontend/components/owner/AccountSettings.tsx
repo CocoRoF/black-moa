@@ -64,7 +64,7 @@ export function SettingsPage() {
   const sendCode = useMutation({ mutationFn: Auth.sendVerification, onSuccess: () => toast.success(t("settings.verify_sent")), onError: (e) => toast.error(friendlyError(e, locale)) });
   const verify = useMutation({ mutationFn: () => Auth.verifyEmail(code), onSuccess: async () => { setCode(""); const u = await Auth.me(); useAuth.getState().setUser(u); toast.success(t("settings.verified")); }, onError: (e) => toast.error(friendlyError(e, locale)) });
   const logoutAll = useMutation({ mutationFn: Auth.logoutAll, onSuccess: () => { useAuth.getState().clear(); qc.clear(); router.replace("/login"); } });
-  const exportZip = useMutation({ mutationFn: () => fetchBlobUrl("/api/users/me/export"), onSuccess: (url) => { const a = document.createElement("a"); a.href = url; a.download = `memora-export-${new Date().toISOString().slice(0, 10)}.zip`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000); }, onError: (e) => toast.error(friendlyError(e, locale)) });
+  const exportZip = useMutation({ mutationFn: () => fetchBlobUrl("/api/users/me/export"), onSuccess: (url) => { const a = document.createElement("a"); a.href = url; a.download = `blackmoa-export-${new Date().toISOString().slice(0, 10)}.zip`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000); }, onError: (e) => toast.error(friendlyError(e, locale)) });
   const delMe = useMutation({ mutationFn: Users.deleteMe, onSuccess: () => { useAuth.getState().clear(); qc.clear(); router.replace("/"); }, onError: (e) => toast.error(friendlyError(e, locale)) });
   return (
     <Page>

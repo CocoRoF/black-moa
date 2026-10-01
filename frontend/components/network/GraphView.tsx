@@ -47,7 +47,7 @@ function arrow(from: { x: number; y: number }, to: { x: number; y: number }, r: 
            points: `${tipX},${tipY} ${backX + nx},${backY + ny} ${backX - nx},${backY - ny}` };
 }
 
-const PERSON_LABEL: Record<string, string> = { self: "나", member: "Memora 사용자", guest: "게스트", offline: "메모", agent: "비서", source: "연결한 곳" };
+const PERSON_LABEL: Record<string, string> = { self: "나", member: "black-moa 사용자", guest: "게스트", offline: "메모", agent: "비서", source: "연결한 곳" };
 function personLabel(n: NetNode, t: (k: string) => string): string {
   // 연동으로 가져온 사람은 어디서 왔는지를 말한다.
   if (n.person === "offline" && n.source && t(`net.source_${n.source}`) !== `net.source_${n.source}`) return t(`net.source_${n.source}`);

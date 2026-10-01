@@ -41,7 +41,7 @@ function Inner({ data }: { data: PostPayload }) {
             {data.avatar_url ? <Image src={data.avatar_url} alt="" width={24} height={24} unoptimized className="h-6 w-6 rounded-full object-cover" /> : null}
             {data.display_name}
           </Link>
-          <Link href="/" aria-label="Memora"><Wordmark size={16} /></Link>
+          <Link href="/" aria-label="black-moa"><Wordmark size={16} /></Link>
         </div>
       </header>
       <article className="mx-auto w-full max-w-[720px] px-5 py-10">

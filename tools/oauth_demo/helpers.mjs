@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 /** 녹화본·자막·로그를 두는 곳 — OUT 이 없으면 이 폴더의 out/. */
 export const S = process.env.OUT ?? path.join(path.dirname(fileURLToPath(import.meta.url)), 'out');
 fs.mkdirSync(S, { recursive: true });
-export const O = 'https://memo-ora.com';
+export const O = 'https://black.memo-ora.com';
 const env = { ...process.env, DISPLAY: ':77' };
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const xdo = (...a) => execFileSync('xdotool', a.map(String), { env });

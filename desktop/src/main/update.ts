@@ -1,5 +1,5 @@
 /**
- * 자동 업데이트 (plan/65) — Memora 다운로드 센터에서 받아 설치하고 다시 켠다.
+ * 자동 업데이트 (plan/65) — black-moa 다운로드 센터에서 받아 설치하고 다시 켠다.
  *
  * 저장소가 비공개라 GitHub 에서는 받을 수 없다(electron-updater 가 늘 조용히 실패하던 이유). 새 판은 서버가
  * GitHub 릴리스를 옮겨 둔 다운로드 센터에 있다. 여기서 하는 일:
@@ -37,7 +37,7 @@ let running = false;
 /** 저절로 묻는 간격의 하한. 본창에 돌아올 때·잠에서 깰 때·한 시간마다 묻되, 이보다 자주는 아니다. */
 const CHECK_EVERY_MS = 30 * 60_000;
 
-const DRY = process.env.MEMORA_UPDATE_DRYRUN === '1';
+const DRY = process.env.BLACKMOA_UPDATE_DRYRUN === '1';
 
 function set(p: Partial<UpdateInfo>): void {
   state.patch({ update: { ...state.get().update, ...p } });
@@ -130,7 +130,7 @@ export async function run(quit: () => void): Promise<void> {
       set({ phase: 'error', error: '이 컴퓨터에 맞는 설치 파일을 찾지 못했어요.' });
       return;
     }
-    const dir = join(app.getPath('temp'), 'memora-update');
+    const dir = join(app.getPath('temp'), 'blackmoa-update');
     rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir, { recursive: true });
     const file = join(dir, asset.name);
@@ -169,7 +169,7 @@ async function install(file: string, quit: () => void): Promise<void> {
   await installLinux(file, quit);
 }
 
-/** 지금 도는 앱의 .app 자리(…/Memora.app). */
+/** 지금 도는 앱의 .app 자리(…/black-moa.app). */
 function bundlePath(): string {
   return dirname(dirname(dirname(process.execPath)));
 }
@@ -185,7 +185,7 @@ function installMac(dmg: string, quit: () => void): void {
   if (!writable) {
     // 덮어쓸 수 없는 자리(다른 계정이 깔았거나 이미지에서 바로 켰다) — 이미지를 열어 준다.
     void shell.openPath(dmg);
-    set({ phase: 'error', error: '열린 창에서 Memora 를 [응용 프로그램] 폴더로 끌어다 놓아 주세요.' });
+    set({ phase: 'error', error: '열린 창에서 black-moa 를 [응용 프로그램] 폴더로 끌어다 놓아 주세요.' });
     return;
   }
   const script = join(dirname(dmg), 'install.sh');
@@ -195,7 +195,7 @@ function installMac(dmg: string, quit: () => void): void {
       '#!/bin/sh',
       // 앱이 완전히 닫힐 때까지 기다린다.
       `while kill -0 ${process.pid} 2>/dev/null; do sleep 0.5; done`,
-      'MNT=$(mktemp -d /tmp/memora-update.XXXXXX)',
+      'MNT=$(mktemp -d /tmp/blackmoa-update.XXXXXX)',
       `hdiutil attach -nobrowse -readonly -noautoopen -mountpoint "$MNT" "${dmg}" >/dev/null || { open "${dest}"; exit 1; }`,
       'SRC=$(ls -d "$MNT"/*.app 2>/dev/null | head -1)',
       'if [ -n "$SRC" ]; then',
@@ -228,7 +228,7 @@ function installLinux(deb: string, quit: () => void): Promise<void> {
     p.on('exit', (code) => {
       if (code === 0) {
         // 새 앱을 띄우고 닫는다. AppImage 로 쓰던 사람도 이제 설치된 앱으로 옮겨 간다.
-        const target = existsSync('/opt/Memora/memora-desktop') ? '/opt/Memora/memora-desktop' : process.execPath;
+        const target = existsSync('/opt/black-moa/blackmoa-desktop') ? '/opt/black-moa/blackmoa-desktop' : process.execPath;
         respawnDetached(target, 2);
         setTimeout(quit, 300);
       } else {

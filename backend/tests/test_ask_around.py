@@ -10,9 +10,9 @@ import uuid as _uuid
 
 from httpx import AsyncClient
 
-from memora.db.session import session_scope
-from memora.models import Agent, User
-from memora.services import relay as REL
+from blackmoa.db.session import session_scope
+from blackmoa.models import Agent, User
+from blackmoa.services import relay as REL
 from tests.conftest import auth, signup
 from tests.test_blog import _open_page
 
@@ -135,7 +135,7 @@ async def test_the_address_book_hands_back_people_to_ask_when_it_has_nobody(clie
     await client.post("/api/blog", headers=auth(wtok), json={"title": f"{topic} 운영을 맡으며", "body": f"{topic} 운영을 2년째 맡고 있습니다."})
 
     owner, agent = await _owner_and_agent(asker["id"])
-    from memora.pipeline.tools.network_tools import NetworkSearch
+    from blackmoa.pipeline.tools.network_tools import NetworkSearch
 
     class _Ctx:
         owner_id = owner.id

@@ -18,7 +18,7 @@ export default defineConfig({
     plugins: [react()],
     build: {
       // 앱이 직접 그리는 화면: 본창의 틀(아이콘 막대·제목 줄·알림·설정), 아바타와 그 컨트롤, 빠른 대화.
-      // 세 문의 안쪽은 memo-ora.com 이 그린다(plan/62).
+      // 세 문의 안쪽은 black.memo-ora.com 이 그린다(plan/62).
       rollupOptions: {
         input: {
           shell: resolve('src/renderer/shell.html'),

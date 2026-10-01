@@ -1,4 +1,4 @@
-"""방 — 메모라 안에서 오가는 모든 말이 담기는 자리 (plan/44).
+"""방 — 블랙모아 안에서 오가는 모든 말이 담기는 자리 (plan/44).
 
 Until now a conversation was a pair: one owner, one secretary. That works while the only
 thing that talks is somebody's own secretary, and it falls apart everywhere else — there

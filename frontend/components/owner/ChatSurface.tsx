@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty";
 import { Avatar } from "@/components/ui/misc";
 
-const LAST_AGENT = "memora:chat:agent";
+const LAST_AGENT = "blackmoa:chat:agent";
 
 /** The standalone chat surface: pick a secretary, talk to it, switch conversations.
  *  Opens the most recent conversation of the last secretary you talked to. */

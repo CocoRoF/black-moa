@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 
-const KEY = "memora:chunk-reload";
+const KEY = "blackmoa:chunk-reload";
 /** After a deploy, stale clients hit ChunkLoadError — reload once (sessionStorage breaks loops). */
 export function ChunkReloadGuard() {
   useEffect(() => {

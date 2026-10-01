@@ -36,12 +36,12 @@ export const signupFields = (t: TFn): SettingField[] => [
 export const smtpFields = (): SettingField[] => [
   { key: "smtp.host", label: "SMTP host", type: "text" }, { key: "smtp.port", label: "Port", type: "number" },
   { key: "smtp.user", label: "User", type: "text" }, { key: "smtp.password", label: "Password", type: "secret" },
-  { key: "smtp.from", label: "From", type: "text", placeholder: "Memora <no-reply@memo-ora.com>" },
-  { key: "smtp.from_agent", label: "From (secretary)", type: "text", placeholder: "Memora <memora@memo-ora.com>" },
+  { key: "smtp.from", label: "From", type: "text", placeholder: "black-moa <no-reply@black.memo-ora.com>" },
+  { key: "smtp.from_agent", label: "From (secretary)", type: "text", placeholder: "black-moa <blackmoa@black.memo-ora.com>" },
   { key: "smtp.use_tls", label: "STARTTLS", type: "bool" },
 ];
 export const telegramFields = (): SettingField[] => [
-  { key: "telegram.bot_token", label: "Bot token", type: "secret" }, { key: "telegram.bot_username", label: "Bot username", type: "text", placeholder: "my_memora_bot" },
+  { key: "telegram.bot_token", label: "Bot token", type: "secret" }, { key: "telegram.bot_username", label: "Bot username", type: "text", placeholder: "my_blackmoa_bot" },
 ];
 export const turnstileFields = (): SettingField[] => [
   { key: "public.turnstile_site_key", label: "Turnstile site key", type: "text" }, { key: "public.turnstile_secret", label: "Turnstile secret", type: "secret" },

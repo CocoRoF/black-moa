@@ -29,14 +29,14 @@ jobs:
           tag="${GITHUB_REF_NAME}"
           # actions/checkout 은 주석 달린 태그를 커밋만 가리키는 태그로 받아 온다. 그대로 --notes-from-tag 를
           # 쓰면 릴리스 노트가 태그 메시지가 아니라 커밋 메시지가 된다(0.7.0~0.8.1 이 그랬다). 태그 자체를 다시
-          # 받아 그 본문(첫 줄 제목은 빼고)을 노트로 쓴다. Memora 다운로드 센터가 이것을 그대로 보여 준다.
+          # 받아 그 본문(첫 줄 제목은 빼고)을 노트로 쓴다. black-moa 다운로드 센터가 이것을 그대로 보여 준다.
           git fetch --force --depth=1 origin "+refs/tags/${tag}:refs/tags/${tag}"
           notes=$(git tag -l --format='%(contents:body)' "$tag")
           [ -n "$notes" ] || notes=$(git tag -l --format='%(contents:subject)' "$tag")
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "이미 있는 릴리스를 씁니다: $tag"
           else
-            gh release create "$tag" --draft --title "Memora 앱 ${tag#desktop-}" --notes "$notes"
+            gh release create "$tag" --draft --title "black-moa 앱 ${tag#desktop-}" --notes "$notes"
           fi
 
   build:
@@ -79,7 +79,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: memora-${{ matrix.name }}
+          name: blackmoa-${{ matrix.name }}
           path: |
             desktop/release/*.dmg
             desktop/release/*.exe
@@ -116,13 +116,13 @@ jobs:
           gh release upload "${GITHUB_REF_NAME}" installers/* --clobber
           gh release edit "${GITHUB_REF_NAME}" --draft=false
 
-  # 공개하자마자 Memora 다운로드 센터에 알린다(plan/64). 저장소가 비공개라 사람은 거기서 받는다.
-  memora:
+  # 공개하자마자 black-moa 다운로드 센터에 알린다(plan/64). 저장소가 비공개라 사람은 거기서 받는다.
+  blackmoa:
     needs: [publish]
     if: startsWith(github.ref, 'refs/tags/desktop-v')
     permissions:
       contents: read
-    uses: ./.github/workflows/memora-downloads.yml
+    uses: ./.github/workflows/blackmoa-downloads.yml
     with:
       tag: ${{ github.ref_name }}
     secrets: inherit

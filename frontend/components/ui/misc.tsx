@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn, initials } from "@/lib/utils";
 import { BRAND } from "@/lib/brand";
 
-/** `mascot`: secretary avatars fall back to the Memora mark instead of initials when there is no image. */
+/** `mascot`: secretary avatars fall back to the black-moa mark instead of initials when there is no image. */
 export function Avatar({ name, src, size = 40, className, shape = "circle", accent, mascot }: { name?: string | null; src?: string | null; size?: number; className?: string; shape?: "circle" | "rounded" | string; accent?: string; mascot?: boolean }) {
   const r = shape === "circle" ? "rounded-full" : "rounded-xl";
   const style = { width: size, height: size, fontSize: Math.max(11, size * 0.4), background: accent ? `color-mix(in oklab, ${accent} 18%, transparent)` : undefined, color: accent };

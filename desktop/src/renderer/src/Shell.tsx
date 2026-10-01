@@ -63,7 +63,7 @@ function TitleBar({ s, door, quickKeys }: { s: ShellState; door: boolean; quickK
       style={{ paddingLeft: mac ? 78 : 10, width: 'env(titlebar-area-width, 100%)' }}
     >
       <img src={mark} alt="" draggable={false} className="h-[18px] w-auto shrink-0" />
-      <span className="ml-1.5 shrink-0 text-[13px] font-semibold">{s.signedIn || s.restoring ? TITLES[s.pane] : 'Memora'}</span>
+      <span className="ml-1.5 shrink-0 text-[13px] font-semibold">{s.signedIn || s.restoring ? TITLES[s.pane] : 'black-moa'}</span>
       {door && s.signedIn ? (
         <div className="no-drag ml-1 flex items-center">
           <IconBtn label="뒤로" disabled={!s.canBack} onClick={() => void api().shell.back()}>
@@ -117,7 +117,7 @@ function IconBtn({ label, onClick, disabled, children }: { label: string; onClic
 function ActivityBar({ s }: { s: ShellState }) {
   const unread = s.unread.inbox;
   return (
-    <nav className="flex w-12 shrink-0 flex-col items-center border-r border-border bg-card py-1.5" aria-label="Memora">
+    <nav className="flex w-12 shrink-0 flex-col items-center border-r border-border bg-card py-1.5" aria-label="black-moa">
       {DOORS.map((d) => (
         <BarBtn key={d.id} label={d.label} active={s.pane === d.id} onClick={() => void api().shell.select(d.id)}>
           {d.icon}

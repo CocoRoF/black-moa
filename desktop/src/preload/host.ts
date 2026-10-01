@@ -15,13 +15,13 @@ const arg = (name: string): string | undefined => {
   return hit ? hit.slice(name.length + 3) : undefined;
 };
 
-const door = arg('memora-door');
+const door = arg('blackmoa-door');
 // 테마는 앱이 정한다. 뜰 때마다(새로고침 포함) 지금 값을 한 번 묻는다 — 웹이 물을 수 있는 것은 이것뿐이다.
 const theme = ipcRenderer.sendSync('host:theme-now') === 'dark' ? 'dark' : 'light';
-const shell = Number(arg('memora-shell') ?? 0) || 0;
+const shell = Number(arg('blackmoa-shell') ?? 0) || 0;
 const okPath = (p: unknown): p is string => typeof p === 'string' && p.startsWith('/') && !p.startsWith('//') && p.length < 2048;
 
-contextBridge.exposeInMainWorld('__memoraHost', {
+contextBridge.exposeInMainWorld('__blackmoaHost', {
   /** 이 앱 안에서 돌고 있다는 표시. 웹은 이것이 있을 때만 아래를 부른다. */
   desktop: true,
   /** 틀 세대. 2 이상이면 웹은 문 안쪽만 그린다. */

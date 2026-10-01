@@ -6,7 +6,7 @@
  * 같은 것을 붙일 때도 이 한 장 찍기를 그대로 쓴다.)
  *
  * - **어느 화면**: 마우스가 있는 화면. 사람이 보고 있는 곳이다.
- * - **메모라의 창은 비킨다**: 찍는 동안 아바타·그 컨트롤·빠른 대화를 잠깐 숨긴다. 화면을 물었는데 아바타가 한가운데
+ * - **블랙모아의 창은 비킨다**: 찍는 동안 아바타·그 컨트롤·빠른 대화를 잠깐 숨긴다. 화면을 물었는데 아바타가 한가운데
  *   찍혀 있으면 안 된다. (창을 캡처에서 빼는 운영체제 기능은 옛 윈도에서 검은 네모로 찍혀 쓰지 않는다.)
  * - **크기**: 긴 변 1920. 원본 4K 는 수 MB 이고 모델이 글을 읽는 데 그만큼 필요하지 않다(Geny 와 같은 기준).
  * - **조용히 넘어가지 않는다**: 맥은 화면 기록 권한이 없으면 검거나 빈 화면을 준다. 그것을 "찍었다" 로 보내면 비서는
@@ -47,7 +47,7 @@ export function openPermission(): void {
   if (process.platform === 'darwin') void shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
 }
 
-const PERMISSION_MSG = '화면 기록 권한이 필요해요. 시스템 설정 → 개인정보 보호 및 보안 → 화면 기록에서 Memora 를 켠 뒤 앱을 다시 켜 주세요.';
+const PERMISSION_MSG = '화면 기록 권한이 필요해요. 시스템 설정 → 개인정보 보호 및 보안 → 화면 기록에서 black-moa 를 켠 뒤 앱을 다시 켜 주세요.';
 
 function fit(width: number, height: number, edge: number): { width: number; height: number } {
   const longest = Math.max(width, height);
@@ -75,7 +75,7 @@ export function looksBlank(img: NativeImage): boolean {
 
 let hooks: { stepAside: (on: boolean) => void } = { stepAside: () => {} };
 
-/** 찍는 동안 메모라의 창을 비키게 하는 손잡이(아바타·빠른 대화가 건다). */
+/** 찍는 동안 블랙모아의 창을 비키게 하는 손잡이(아바타·빠른 대화가 건다). */
 export function setStepAside(fn: (on: boolean) => void): void {
   hooks = { stepAside: fn };
 }

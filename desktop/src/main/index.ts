@@ -2,7 +2,7 @@
  * 앱이 시작되는 곳.
  *
  * **쓰기 위한 앱이다** (plan/62). 틀 — 아이콘 막대, 제목 줄, 알림, 설정 — 은 앱이 그리고, 세 개의 문 —
- * 비서와 대화·소식·커뮤니티 — 의 안쪽은 memo-ora.com 이 "앱 모드" 로 그린다. 채팅을 앱이 다시 그리면
+ * 비서와 대화·소식·커뮤니티 — 의 안쪽은 black.memo-ora.com 이 "앱 모드" 로 그린다. 채팅을 앱이 다시 그리면
  * 사진·마크다운·도구 카드가 빠진 웹보다 못한 앱이 된다(plan/46 §9). 나머지 기능은 브라우저에서 연다.
  *
  * 앱만 하는 것: 곁에 떠 있는 아바타, 어디서든 부르는 빠른 대화, 비서가 먼저 건넨 말을 바로 알리는 것,
@@ -32,8 +32,8 @@ const RENDERER = join(here, '../renderer');
 const DEV_URL = process.env.ELECTRON_RENDERER_URL;
 
 // 리눅스의 웨이랜드에서는 창이 제 자리를 정할 수도, 항상 위에 있을 수도 없다. 아바타와 빠른 대화가
-// 둘 다 그것으로 산다. XWayland 로 띄운다(Geny 와 같음). `MEMORA_OZONE=wayland` 로 끌 수 있다.
-if (process.platform === 'linux' && !process.env.MEMORA_OZONE) {
+// 둘 다 그것으로 산다. XWayland 로 띄운다(Geny 와 같음). `BLACKMOA_OZONE=wayland` 로 끌 수 있다.
+if (process.platform === 'linux' && !process.env.BLACKMOA_OZONE) {
   app.commandLine.appendSwitch('ozone-platform', 'x11');
 }
 
@@ -111,9 +111,9 @@ if (!app.requestSingleInstanceLock()) {
 
     // 손으로 돌리는 검사(test/shell.mjs)만 쓰는 손잡이. 서버가 먼저 말을 거는 것은 시험에서 만들 수 없어서
     // 그 이벤트를 흘려 넣는다. 켜는 변수가 없으면 아무것도 걸리지 않는다.
-    if (process.env.MEMORA_TEST_HOOKS === '1') {
+    if (process.env.BLACKMOA_TEST_HOOKS === '1') {
       Object.assign(globalThis, {
-        __memoraTest: {
+        __blackmoaTest: {
           live: ctl.onLiveEvent,
           state: state.get,
           quick: () => chat.avatar.current(),

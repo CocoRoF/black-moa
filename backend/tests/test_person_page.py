@@ -9,8 +9,8 @@ import uuid as _uuid
 
 from httpx import AsyncClient
 
-from memora.db.session import session_scope
-from memora.models import Agent, ShareLink, User
+from blackmoa.db.session import session_scope
+from blackmoa.models import Agent, ShareLink, User
 from tests.conftest import auth, signup
 
 
@@ -38,7 +38,7 @@ async def test_anyone_can_read_the_page_and_reach_the_secretary(client: AsyncCli
     await _handle(user["id"], f"haram{tag}")
     await _publish(user["id"], code=f"door{tag}")
     await client.put("/api/users/me/profile", headers=auth(tok), json={
-        "data": {"title": "백엔드 개발자", "company": "메모라", "bio": "서버를 만듭니다", "location": "서울"},
+        "data": {"title": "백엔드 개발자", "company": "블랙모아", "bio": "서버를 만듭니다", "location": "서울"},
         "visibility": {"title": "public", "company": "public", "bio": "public", "location": "private"}})
 
     # No token at all: this is the whole point of the page.
@@ -46,7 +46,7 @@ async def test_anyone_can_read_the_page_and_reach_the_secretary(client: AsyncCli
     assert r.status_code == 200, r.text
     j = r.json()
     assert j["handle"] == f"haram{tag}" and j["display_name"]
-    assert j["fields"]["title"] == "백엔드 개발자" and j["fields"]["company"] == "메모라"
+    assert j["fields"]["title"] == "백엔드 개발자" and j["fields"]["company"] == "블랙모아"
     # A field they kept private stays private on a page the whole internet can read.
     assert "location" not in j["fields"]
     assert j["secretary"]["name"] == "지니" and j["secretary"]["code"] == f"door{tag}"

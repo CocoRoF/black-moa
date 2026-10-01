@@ -12,7 +12,7 @@ import uuid
 from httpx import AsyncClient
 from PIL import Image
 
-from memora.services.uploads import FIGURE_EDGE, PNG_KEEP_MAX, _resize_image
+from blackmoa.services.uploads import FIGURE_EDGE, PNG_KEEP_MAX, _resize_image
 from tests.conftest import auth, signup
 
 
@@ -91,7 +91,7 @@ async def test_the_original_picture_is_kept_beside_the_profile_photo(client: Asy
     r = await client.patch(f"/api/agents/{a['id']}", json={"avatar_url": "/presets/secretary-male.png?v=3",
                                                           "character_url": "/presets/secretary-female.png?v=3"}, headers=auth(tok))
     assert r.json()["character_url"].startswith("/presets/secretary-male-full.png?v=")
-    # 얼굴이 없으면 없음(앱은 메모라 표식)
+    # 얼굴이 없으면 없음(앱은 블랙모아 표식)
     r = await client.patch(f"/api/agents/{a['id']}", json={"avatar_url": None, "character_url": None}, headers=auth(tok))
     assert r.json()["character_url"] is None
 

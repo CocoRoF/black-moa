@@ -47,7 +47,7 @@ export type LinkLayout = "chat" | "stage";
 export interface PublicLinkPayload { agent: PublicAgent; link: { code: string; status: string; layout?: LinkLayout }; account?: LinkAccount }
 
 interface Stored { token: string; cid: string; uid?: string }
-const key = (code: string) => `memora:v:${code}`;
+const key = (code: string) => `blackmoa:v:${code}`;
 
 /** The stored visitor session, unless it belongs to somebody who is no longer signed in.
  *

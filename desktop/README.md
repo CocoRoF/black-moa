@@ -1,20 +1,20 @@
-# Memora 데스크톱 앱
+# black-moa 데스크톱 앱
 
 비서가 창 하나로 늘 곁에 있게 만드는 앱입니다. 윈도·맥·리눅스에서 돕니다.
 
-서버는 **memo-ora.com** 으로 고정입니다. 설정으로도 바꾸지 않습니다.
+서버는 **black.memo-ora.com** 으로 고정입니다. 설정으로도 바꾸지 않습니다.
 
 ## 받는 곳
 
-Memora 웹의 [다운로드 센터](https://memo-ora.com/app/downloads)
+black-moa 웹의 [다운로드 센터](https://black.memo-ora.com/app/downloads)
 
 | 운영체제 | 파일 |
 |---|---|
-| 윈도 | `Memora_windows_<버전>.exe` (설치 마법사) |
-| 맥 | `Memora_macos_universal_<버전>.dmg` (Apple 칩·Intel 한 파일) |
-| 리눅스 | `Memora_linux_<버전>.deb` (Ubuntu·Debian 설치 꾸러미) |
+| 윈도 | `black-moa_windows_<버전>.exe` (설치 마법사) |
+| 맥 | `black-moa_macos_universal_<버전>.dmg` (Apple 칩·Intel 한 파일) |
+| 리눅스 | `black-moa_linux_<버전>.deb` (Ubuntu·Debian 설치 꾸러미) |
 
-저장소가 비공개라 사람은 **Memora 웹의 [다운로드 센터]**에서 받습니다. 태그를 밀면 CI 가 굽고 공개한 뒤
+저장소가 비공개라 사람은 **black-moa 웹의 [다운로드 센터]**에서 받습니다. 태그를 밀면 CI 가 굽고 공개한 뒤
 다운로드 센터에 알려, 몇 분 안에 거기 올라옵니다(plan/64).
 
 서명하지 않았습니다. 윈도는 처음 열 때 [추가 정보] → [실행], 맥은 오른쪽 클릭 후
@@ -24,7 +24,7 @@ Memora 웹의 [다운로드 센터](https://memo-ora.com/app/downloads)
 
 **쓰기 위한 앱입니다** (plan/62). VS Code 처럼 왼쪽에 아이콘 막대가 있고, 거기 선 문은 셋뿐입니다.
 
-- **비서와 대화 · 소식 · 커뮤니티.** 세 문의 안쪽은 memo-ora.com 이 "앱 모드" 로 그립니다. 사진·마크다운·
+- **비서와 대화 · 소식 · 커뮤니티.** 세 문의 안쪽은 black.memo-ora.com 이 "앱 모드" 로 그립니다. 사진·마크다운·
   도구 카드·첨부가 웹과 똑같습니다. 문마다 뷰가 하나씩 살아 있어서 오가도 스크롤과 쓰던 글이 그대로입니다.
 - **나머지는 웹에서.** 비서 관리, 내 정보, 스케줄, 지식 같은 자리로 가는 링크는 브라우저가 엽니다.
   앱은 쓰는 곳이고, 설정하는 곳은 웹입니다.
@@ -47,7 +47,7 @@ Memora 웹의 [다운로드 센터](https://memo-ora.com/app/downloads)
 (plan/46 §2).
 
 리눅스에서는 XWayland(X11)로 뜹니다. 웨이랜드에서는 아바타와 빠른 대화가 제자리에 뜰 수도, 항상 위에 있을
-수도 없어서입니다. `MEMORA_OZONE=wayland` 로 끌 수 있습니다.
+수도 없어서입니다. `BLACKMOA_OZONE=wayland` 로 끌 수 있습니다.
 
 ## 만드는 법
 

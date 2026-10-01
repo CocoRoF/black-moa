@@ -7,7 +7,7 @@
 import { net, session, type Session } from 'electron';
 import { ORIGIN } from '@shared/contract';
 
-export const PARTITION = 'persist:memora';
+export const PARTITION = 'persist:blackmoa';
 
 export class ApiError extends Error {
   constructor(

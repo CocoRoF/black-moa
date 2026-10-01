@@ -1,5 +1,5 @@
 /**
- * 틀·아바타·빠른 대화가 함께 쓰는 작은 조각들. 메모라 웹의 모양을 한 단계 작게.
+ * 틀·아바타·빠른 대화가 함께 쓰는 작은 조각들. 블랙모아 웹의 모양을 한 단계 작게.
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { VOICE_UNKNOWN, type VoiceAvailability } from '@shared/contract';

@@ -26,7 +26,7 @@ def outbox(monkeypatch):
     async def fake_send(db, *, to, subject, text, html=None, **kw):
         sent.append({"to": to, "subject": subject, "text": text})
 
-    monkeypatch.setattr("memora.api.company_verify.send_mail", fake_send)
+    monkeypatch.setattr("blackmoa.api.company_verify.send_mail", fake_send)
     return sent
 
 
@@ -36,8 +36,8 @@ def code_of(mail: dict) -> str:
 
 
 async def sync_domains() -> None:
-    from memora.db.session import session_scope
-    from memora.services.companies.domains import sync_from_homepages
+    from blackmoa.db.session import session_scope
+    from blackmoa.services.companies.domains import sync_from_homepages
 
     async with session_scope("worker") as db:
         await sync_from_homepages(db)
@@ -45,8 +45,8 @@ async def sync_domains() -> None:
 
 
 async def make_admin(user_id: str) -> None:
-    from memora.db.session import session_scope
-    from memora.models import User
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
 
     async with session_scope("worker") as db:
         (await db.get(User, _uuid.UUID(user_id))).role = "admin"
@@ -54,7 +54,7 @@ async def make_admin(user_id: str) -> None:
 
 
 def test_a_domain_is_the_part_somebody_registered():
-    from memora.services.companies.domains import email_domain, homepage_domain, mask_email, registrable
+    from blackmoa.services.companies.domains import email_domain, homepage_domain, mask_email, registrable
 
     assert registrable("www.samsung.com") == "samsung.com"
     assert registrable("mail.sec.samsung.com") == "samsung.com"

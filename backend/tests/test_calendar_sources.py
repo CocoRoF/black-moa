@@ -12,10 +12,10 @@ from datetime import UTC, datetime, timedelta
 import pytest_asyncio
 from httpx import AsyncClient
 
-from memora.db.session import session_scope
-from memora.models import Connection, IntegrationEvent
-from memora.services import calendar_sources as CS
-from memora.services import settings as S
+from blackmoa.db.session import session_scope
+from blackmoa.models import Connection, IntegrationEvent
+from blackmoa.services import calendar_sources as CS
+from blackmoa.services import settings as S
 from tests.conftest import auth, signup
 
 READ = "https://www.googleapis.com/auth/calendar.readonly"
@@ -102,7 +102,7 @@ async def test_turning_import_off_takes_the_calendar_out_of_the_schedule(client:
     assert (await client.get(f"/api/schedule?{_around()}", headers=auth(tok))).json()["events"] == []
     # 빈 시간 계산에서도 빠진다.
     async with session_scope() as db:
-        from memora.services import schedule as SCH
+        from blackmoa.services import schedule as SCH
         now = datetime.now(UTC)
         assert await SCH.busy_between(db, uuid.UUID(user["id"]), now, now + timedelta(days=5)) == []
     # 다시 켜면 돌아온다 (이미 받은 권한이라 동의 화면이 필요 없다).
@@ -160,8 +160,8 @@ async def test_coming_back_from_consent_lands_on_the_tab_it_left(client: AsyncCl
     """연결을 마치면 시작한 화면(스케줄의 [연동] 탭)으로, 그 주소 그대로 돌아온다."""
     from fastapi import Response
 
-    from memora.services import oauth as OA
-    from memora.services.oauth import state as OST
+    from blackmoa.services import oauth as OA
+    from blackmoa.services.oauth import state as OST
 
     user, _ = await signup(client)
     g = OA.PROVIDERS["google"]
@@ -185,17 +185,17 @@ async def test_coming_back_from_consent_lands_on_the_tab_it_left(client: AsyncCl
 
         state, bind = begin("/app/schedule?tab=sync")
         r = await client.get("/api/integrations/google/callback", params={"code": "c", "state": state},
-                             cookies={"memora_oauth": bind}, follow_redirects=False)
+                             cookies={"blackmoa_oauth": bind}, follow_redirects=False)
         assert r.status_code == 302 and r.headers["location"].endswith("/app/schedule?tab=sync&connected=google"), r.headers["location"]
         # 밖으로 나가는 주소는 받지 않는다.
         state, bind = begin("https://evil.example/x")
         r = await client.get("/api/integrations/google/callback", params={"code": "c", "state": state},
-                             cookies={"memora_oauth": bind}, follow_redirects=False)
+                             cookies={"blackmoa_oauth": bind}, follow_redirects=False)
         assert r.headers["location"].endswith("/app/account?connected=google")
         # 흐름을 시작한 브라우저가 아니면(쿠키가 없거나 다르면) 받지 않는다.
         state, _ = begin("/app/account")
         r = await client.get("/api/integrations/google/callback", params={"code": "c", "state": state},
-                             cookies={"memora_oauth": "someone-else"}, follow_redirects=False)
+                             cookies={"blackmoa_oauth": "someone-else"}, follow_redirects=False)
         assert "error=state_browser_mismatch" in r.headers["location"]
     finally:
         await _google_on(False)
@@ -204,9 +204,9 @@ async def test_coming_back_from_consent_lands_on_the_tab_it_left(client: AsyncCl
 async def test_a_contacts_failure_does_not_stop_calendar_import(client: AsyncClient, monkeypatch):
     """운영에서 겪은 것(2026-09-29): 프로젝트에 People API 가 꺼져 있어 연락처가 403 — 그 하나로 동기화 전체가
     실패하고 일정도 안 들어왔다. 연락처는 적어 두고 다음에 다시 하고, 일정은 들어와야 한다."""
-    from memora.providers.http import ProviderHTTPError
-    from memora.services import connections as CN
-    from memora.services import google as G
+    from blackmoa.providers.http import ProviderHTTPError
+    from blackmoa.services import connections as CN
+    from blackmoa.services import google as G
 
     user, _ = await signup(client)
     cid = await _connected(user["id"], caps=["calendar_read", "contacts"], scopes=[])

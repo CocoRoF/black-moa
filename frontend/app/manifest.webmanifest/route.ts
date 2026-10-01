@@ -5,7 +5,7 @@ export const dynamic = "force-static";
 
 export function GET() {
   return NextResponse.json({
-    name: "Memora, 나만의 AI 비서", short_name: "Memora", description: "당신의 진짜 비서를 만들어보세요", id: "/app", start_url: "/app", scope: "/", display: "standalone",
+    name: "black-moa, 나만의 AI 비서", short_name: "black-moa", description: "당신의 진짜 비서를 만들어보세요", id: "/app", start_url: "/app", scope: "/", display: "standalone",
     orientation: "portrait", background_color: "#f7f7f9", theme_color: "#1a5fe0", lang: "ko",
     icons: [
       { src: `/icons/icon-192.png?v=${BRAND_REV}`, sizes: "192x192", type: "image/png", purpose: "any" },

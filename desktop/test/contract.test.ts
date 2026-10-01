@@ -17,7 +17,7 @@ import { targetOf } from '../src/main/alerts';
 import { cutout, hasAlpha } from '../src/shared/cutout';
 
 test('서버 주소는 고정이다', () => {
-  assert.equal(ORIGIN, 'https://memo-ora.com');
+  assert.equal(ORIGIN, 'https://black.memo-ora.com');
 });
 
 test('끝맺는 이벤트 셋을 모두 안다', () => {
@@ -56,7 +56,7 @@ test('임시 경로에서는 자동 시작을 등록하지 않는다', () => {
   // AppImage 를 /tmp 에 풀어 돌릴 때 execPath 는 다음 부팅에 없다. 거기를
   // 가리키는 항목을 써 두면 켜진 것처럼 보이면서 영영 안 뜬다.
   const before = process.env.APPIMAGE;
-  process.env.APPIMAGE = '/tmp/.mount_Memoraabc/AppRun';
+  process.env.APPIMAGE = '/tmp/.mount_black-moaabc/AppRun';
   try {
     const r = applyAutostart({ setLoginItemSettings: () => {}, getPath: () => '/home/nobody' } as never, true, 'linux');
     assert.equal(r.applied, false);
@@ -113,7 +113,7 @@ test('안 읽은 것: 서버에 못 닿은 것은 0개가 아니다', async () =
 });
 
 test('웹 뷰에 얹는 다리로는 토큰을 읽어 갈 수 없다', () => {
-  // 읽어 가는 길이 생기면 memo-ora.com 의 스크립트 한 줄이 이 앱의 토큰을 가져갈 수 있다. 0.8 에서 문 이름과
+  // 읽어 가는 길이 생기면 black.memo-ora.com 의 스크립트 한 줄이 이 앱의 토큰을 가져갈 수 있다. 0.8 에서 문 이름과
   // 이동 요청이 늘었지만, 전부 웹 → 앱의 한 방향이고 앱이 웹에게 값을 돌려주는 길(invoke)은 없다.
   const src = readFileSync(new URL('../src/preload/host.ts', import.meta.url), 'utf8');
   const exposed = [...src.matchAll(/^\s{2}(\w+)[(:,]/gm)].map((m) => m[1]).sort();
@@ -144,7 +144,7 @@ test('세 문의 안쪽은 웹이 그린다', () => {
 });
 
 test('문의 규칙: 같은 문은 그대로, 다른 문은 앱이, 문 밖은 브라우저가', () => {
-  assert.deepEqual(routeFor('https://memo-ora.com/app/chat?a=1', 'chat'), { kind: 'stay' });
+  assert.deepEqual(routeFor('https://black.memo-ora.com/app/chat?a=1', 'chat'), { kind: 'stay' });
   assert.deepEqual(routeFor('/app/community/p/9', 'feed'), { kind: 'door', door: 'community', path: '/app/community/p/9' });
   assert.deepEqual(routeFor('/app/u/abc', 'community'), { kind: 'door', door: 'feed', path: '/app/u/abc' });
   assert.equal(routeFor('/app/schedule', 'chat').kind, 'browser');
@@ -273,7 +273,7 @@ test('새 판: 다운로드 센터의 판이 이 앱보다 새것인가', () => 
   assert.ok(!newerThan('1.0.0-beta.2', '1.0.0'));
 });
 
-test('새 판은 Memora 의 다운로드 센터에서 받는다', () => {
+test('새 판은 black-moa 의 다운로드 센터에서 받는다', () => {
   // 저장소가 비공개라 GitHub 에서는 받을 수 없다(plan/64). 앱이 GitHub 를 가리키면 누르는 사람마다 404 를 본다.
   for (const f of ['controller.ts', 'ipc.ts', 'index.ts']) {
     const src = readFileSync(new URL(`../src/main/${f}`, import.meta.url), 'utf8');

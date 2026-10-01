@@ -74,7 +74,7 @@ const NAV: NavEntry[] = [
   { group: "settings", key: "navg.settings", items: [
     // 인증과 바깥 서비스 연결은 한 곳 — 연결은 이 계정에 잇는 일이라 관리 쪽이고, 가져온 것은 [내 정보]로 간다 (plan/49·81).
     { href: "/app/account", key: "nav.account", icon: <ShieldCheck /> },
-    // Memora 의 파일 시스템(파일·지식이 쓰는 공간)을 돌보는 곳 — 쓰는 곳은 [내 정보 → 파일] (plan/78).
+    // black-moa 의 파일 시스템(파일·지식이 쓰는 공간)을 돌보는 곳 — 쓰는 곳은 [내 정보 → 파일] (plan/78).
     { href: "/app/cloud", key: "nav.cloud", icon: <Cloud /> },
     { href: "/app/credits", key: "nav.credits", icon: <CircleDollarSign /> },
     { href: "/app/notifications", key: "nav.notifications", icon: <BellRing /> },

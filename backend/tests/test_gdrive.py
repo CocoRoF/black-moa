@@ -1,7 +1,7 @@
 """Google Drive 와 [파일] (plan/75) — drive.file 하나로.
 
 가짜 Drive 로: 연결·파일 선택 창 설정 여부, 고른 파일 가져오기(일반 파일, Google 시트는 Excel 로 바꿔서, 폴더·없는 파일은
-까닭과 함께 건너뜀), [파일]의 파일을 Drive 의 "Memora" 폴더에 저장(폴더가 없으면 만든다).
+까닭과 함께 건너뜀), [파일]의 파일을 Drive 의 "black-moa" 폴더에 저장(폴더가 없으면 만든다).
 """
 from __future__ import annotations
 
@@ -14,10 +14,10 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import AgentFile, Connection
-from memora.services import gdrive as GD
-from memora.services import settings as S
+from blackmoa.db.session import session_scope
+from blackmoa.models import AgentFile, Connection
+from blackmoa.services import gdrive as GD
+from blackmoa.services import settings as S
 from tests.conftest import auth, signup
 from tests.test_sso import _provider
 
@@ -57,7 +57,7 @@ class FakeDrive:
             "dir1": {"id": "dir1", "name": "폴더", "mimeType": GD.FOLDER_MIME},
         }
         if fid not in files:
-            from memora.providers.http import ProviderHTTPError
+            from blackmoa.providers.http import ProviderHTTPError
             raise ProviderHTTPError(404, "not found")
         if url.endswith("/export"):
             return httpx.Response(200, request=req, content=_xlsx())
@@ -131,26 +131,26 @@ async def test_files_come_in_from_drive_and_go_back_out(client: AsyncClient, dri
     # 비서는 나와의 대화에서 이 파일을 본다 — 어느 비서든 (plan/77).
     from types import SimpleNamespace
 
-    from memora.services import files as FILES
+    from blackmoa.services import files as FILES
     async with session_scope() as db:
         ctx = SimpleNamespace(owner_id=uuid.UUID(user["id"]), agent=SimpleNamespace(id=uuid.UUID(agent["id"])), audience="owner")
         seen = (await db.execute(select(AgentFile.filename).where(*FILES.visible_to(ctx)))).scalars().all()
         assert {"매출표.xlsx", "회의록.txt"} <= set(seen)
 
-    # [파일]의 파일을 Drive 에 저장 — "Memora" 폴더를 한 번 만들고 거기에 올린다.
+    # [파일]의 파일을 Drive 에 저장 — "black-moa" 폴더를 한 번 만들고 거기에 올린다.
     fid = next(f["id"] for f in listed if f["filename"] == "회의록.txt")
     r = await client.post("/api/drive/save", json={"file_id": fid}, headers=auth(tok))
     assert r.status_code == 200 and r.json()["link"].startswith("https://drive.google.com/")
-    assert drive.folders == ["Memora"]
+    assert drive.folders == ["black-moa"]
     head = drive.uploaded.split(b"\r\n\r\n", 2)[1].split(b"\r\n")[0]
     assert json.loads(head) == {"name": "회의록.txt", "parents": ["folder1"]}
     assert "다음 주 회의는 목요일입니다.".encode() in drive.uploaded
     await client.post("/api/drive/save", json={"file_id": fid}, headers=auth(tok))
-    assert drive.folders == ["Memora"]   # 두 번째는 있는 폴더를 쓴다
+    assert drive.folders == ["black-moa"]   # 두 번째는 있는 폴더를 쓴다
 
 
 async def test_google_asks_only_for_the_files_the_user_picks(client: AsyncClient):
-    from memora.services import oauth as OA
+    from blackmoa.services import oauth as OA
     g = OA.get("google")
     drive = next(c for c in g.capabilities if c.id == "drive")
     assert drive.scopes == ("https://www.googleapis.com/auth/drive.file",)

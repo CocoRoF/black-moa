@@ -15,7 +15,7 @@ const say = (ok, what, extra = '') => {
 
 const app = await electron.launch({
   executablePath: APP,
-  args: ['--no-sandbox', '--disable-gpu', '--user-data-dir=/tmp/memora-packaged'],
+  args: ['--no-sandbox', '--disable-gpu', '--user-data-dir=/tmp/blackmoa-packaged'],
   env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined },
 });
 const win = await app.firstWindow();
@@ -30,12 +30,12 @@ const shell = app.windows().find((w) => w.url().includes('shell.html'));
 say(!!shell, '틀이 뜬다', shell?.url());
 const fontOk = shell ? await shell.evaluate(() => document.fonts.check('13px "Pretendard Variable"')) : false;
 say(fontOk, '글꼴이 함께 실린다');
-// 세 문의 뷰가 memo-ora.com 이고, preload 가 asar 안에서 제대로 잡혀야 다리가 선다.
-const door = app.windows().find((w) => w.url().startsWith('https://memo-ora.com'));
-say(!!door, '문이 memo-ora.com 을 띄운다', door?.url());
+// 세 문의 뷰가 black.memo-ora.com 이고, preload 가 asar 안에서 제대로 잡혀야 다리가 선다.
+const door = app.windows().find((w) => w.url().startsWith('https://black.memo-ora.com'));
+say(!!door, '문이 black.memo-ora.com 을 띄운다', door?.url());
 const bridge = door
   ? await door.evaluate(() => {
-      const h = window.__memoraHost;
+      const h = window.__blackmoaHost;
       return h ? Object.keys(h).sort().join(',') : '';
     })
   : '';

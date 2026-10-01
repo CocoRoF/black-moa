@@ -19,10 +19,10 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import text
 
-from memora.db.session import session_scope
-from memora.models import ClaudeAccount, User
-from memora.services import claude_balancer as B
-from memora.services import claude_pool as CP
+from blackmoa.db.session import session_scope
+from blackmoa.models import ClaudeAccount, User
+from blackmoa.services import claude_balancer as B
+from blackmoa.services import claude_pool as CP
 from tests.conftest import auth, signup
 
 # No module-level asyncio marker: half of this file is synchronous by design (the balancer
@@ -286,7 +286,7 @@ async def test_an_empty_pool_leases_nothing_so_single_account_installs_are_untou
 async def test_a_leased_session_runs_in_its_own_cli_home(admin_client):
     """The isolation the whole feature rests on: HOME *and* CLAUDE_CONFIG_DIR point at the
     leased account's directory, so one subscription can never read another's tokens."""
-    from memora.providers.llm.credentials import build_bundle
+    from blackmoa.providers.llm.credentials import build_bundle
 
     client, tok, created = admin_client
     acc = (await client.post("/api/admin/providers/claude-code/accounts", json={"label": "isolated"},
@@ -393,7 +393,7 @@ async def test_the_hourly_sync_harvests_a_token_the_cli_refreshed_by_itself(admi
     async with session_scope() as db:
         report = await CP.sync_all(db)
         assert report["harvested"] == 1
-        stored = json.loads(__import__("memora.core.security", fromlist=["decrypt"]).decrypt(
+        stored = json.loads(__import__("blackmoa.core.security", fromlist=["decrypt"]).decrypt(
             (await db.get(ClaudeAccount, _uuid.UUID(acc["id"]))).credentials_json))
     assert stored["claudeAiOauth"]["accessToken"] == refreshed["claudeAiOauth"]["accessToken"]
 
@@ -462,7 +462,7 @@ async def test_a_background_failure_still_takes_the_account_out_of_rotation(admi
     """
     from geny_executor.llm_client.registry import ClientRegistry
 
-    from memora.providers.llm import simple
+    from blackmoa.providers.llm import simple
 
     client, tok, created = admin_client
     acc = (await client.post("/api/admin/providers/claude-code/accounts", json={"label": "background"},
@@ -543,7 +543,7 @@ async def test_one_unwritable_account_is_skipped_instead_of_collapsing_the_pool(
 async def test_the_existing_login_becomes_account_one(admin_client):
     """An install that already had a Claude Code login must not end up with two places to
     look. Opening the page adopts it as the first row."""
-    from memora.services import settings as S
+    from blackmoa.services import settings as S
 
     client, tok, created = admin_client
     async with session_scope() as db:
@@ -587,7 +587,7 @@ def test_a_full_account_is_still_asked_before_a_conversation_fails():
     used to exhaust the ceiling and every further conversation was refused outright — with
     the account signed in, healthy and perfectly able to answer.
     """
-    from memora.services import claude_balancer as B
+    from blackmoa.services import claude_balancer as B
 
     full = B.AccountSnapshot(id="a", label="a", max_concurrency=2, in_flight=2)
     fuller = B.AccountSnapshot(id="b", label="b", max_concurrency=2, in_flight=5)

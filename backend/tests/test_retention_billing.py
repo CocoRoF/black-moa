@@ -6,10 +6,10 @@ from datetime import UTC, date, datetime, timedelta
 import pytest
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import Agent, Conversation, InboxItem, Notification, User, Visitor
-from memora.services import credits as CR
-from memora.services.retention import _purge_expired_thread_derivatives
+from blackmoa.db.session import session_scope
+from blackmoa.models import Agent, Conversation, InboxItem, Notification, User, Visitor
+from blackmoa.services import credits as CR
+from blackmoa.services.retention import _purge_expired_thread_derivatives
 from tests.conftest import signup
 
 

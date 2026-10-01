@@ -27,7 +27,7 @@ def upgrade() -> None:
     op.add_column("users", sa.Column("community_name_at", sa.DateTime(timezone=True), nullable=True))
     op.execute("ALTER TABLE users ALTER COLUMN community_name TYPE CITEXT USING community_name::citext")
 
-    from memora.services.community import pen_name_for
+    from blackmoa.services.community import pen_name_for
 
     conn = op.get_bind()
     rows = conn.execute(sa.text(

@@ -57,7 +57,7 @@ def test_every_preset_figure_is_a_small_transparent_png_made_from_its_original()
     import pytest
     from PIL import Image
 
-    from memora.services.agents import PRESET_FIGURES
+    from blackmoa.services.agents import PRESET_FIGURES
 
     root = Path(__file__).resolve().parents[2]
     presets = root / "frontend" / "public" / "presets"

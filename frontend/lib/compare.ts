@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 /** The compare tray (plan/40 §7): up to four company ids the reader has picked, kept in
  *  this browser so a pick on one page is still there on the next. A tray is a per-viewer
  *  convenience, not shared state — nothing about it needs the server. */
-const KEY = "memora:cx:compare";
+const KEY = "blackmoa:cx:compare";
 export const COMPARE_MAX = 4;
 
 type Entry = { id: string; name: string };

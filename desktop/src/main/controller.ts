@@ -24,7 +24,7 @@ import { Live } from './live';
 import { openOutside } from './outside';
 import { applyAutostart, autostartActive, UnreadWatcher } from './shell';
 
-/** 새 판은 Memora 의 다운로드 센터에서 받는다(plan/64). 저장소가 비공개라 GitHub 에서는 받을 수 없다. */
+/** 새 판은 black-moa 의 다운로드 센터에서 받는다(plan/64). 저장소가 비공개라 GitHub 에서는 받을 수 없다. */
 export const DOWNLOADS = ORIGIN + '/app/downloads';
 
 let paths: { preload: string; renderer: string; devUrl?: string };
@@ -212,7 +212,7 @@ export function goTo(path: string): void {
 
 let offLocked: (() => void) | null = null;
 
-// 찍는 동안 메모라의 창은 비킨다(plan/70).
+// 찍는 동안 블랙모아의 창은 비킨다(plan/70).
 capture.setStepAside((on) => {
   avatar.stepAside(on);
   quick.stepAside(on);
@@ -389,7 +389,7 @@ export const unread = new UnreadWatcher(
     } catch {
       /* 배지가 없는 데스크톱 */
     }
-    tray?.setToolTip(total ? `Memora · 안 읽은 알림 ${total}` : 'Memora');
+    tray?.setToolTip(total ? `black-moa · 안 읽은 알림 ${total}` : 'black-moa');
   },
   () => {
     /* 새로 생긴 것은 실시간 흐름이 이미 알렸다 */
@@ -544,7 +544,7 @@ function trayImage() {
 export function buildTray(quit: () => void): void {
   if (tray) return;
   tray = new Tray(trayImage());
-  tray.setToolTip('Memora');
+  tray.setToolTip('black-moa');
   quitFn = quit;
   refreshTray();
   tray.on('click', () => win.focus());
@@ -561,7 +561,7 @@ export function refreshTray(): void {
   const keys = settings.get().shortcuts;
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: 'Memora 열기', click: () => win.focus() },
+      { label: 'black-moa 열기', click: () => win.focus() },
       { type: 'separator' },
       { label: `빠른 대화${keys.quick ? `   ${pretty(keys.quick)}` : ''}`, enabled: s.signedIn, click: () => openQuick() },
       { label: s.avatarOn ? '아바타 닫기' : '아바타 띄우기', enabled: s.signedIn, click: () => void toggleAvatar() },

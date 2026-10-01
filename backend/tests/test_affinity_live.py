@@ -12,10 +12,10 @@ from zoneinfo import ZoneInfo
 
 from httpx import AsyncClient
 
-from memora.db.session import session_scope
-from memora.models import Agent, AgentRelationship, Fact, Message, Turn, User
-from memora.services import conversations as CV
-from memora.services import relationship as R
+from blackmoa.db.session import session_scope
+from blackmoa.models import Agent, AgentRelationship, Fact, Message, Turn, User
+from blackmoa.services import conversations as CV
+from blackmoa.services import relationship as R
 from tests.conftest import auth, signup
 
 KST = ZoneInfo("Asia/Seoul")

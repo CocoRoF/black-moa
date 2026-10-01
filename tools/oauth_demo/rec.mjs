@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { S, O, sleep, xdo, log, point, click, type, Recorder } from './helpers.mjs';
 
 const PW = process.env.DEMO_PW ?? '';
-if (!PW) throw new Error('DEMO_PW 를 넣어 주세요 (demo@memo-ora.com 비밀번호)');
+if (!PW) throw new Error('DEMO_PW 를 넣어 주세요 (demo@black.memo-ora.com 비밀번호)');
 const LINK = `${O}/secretary/p2urjttb`;
 const CLIENT = '145625595263-e3496eus7scgtdjh534hv5a6evcejq7o.apps.googleusercontent.com';
 const only = process.env.ONLY ?? '';   // 시험용: 한 장면만
@@ -12,14 +12,14 @@ const browser = await chromium.connectOverCDP('http://127.0.0.1:9333');
 const ctx = browser.contexts()[0];
 let page = await ctx.newPage();
 for (const p of ctx.pages()) if (p !== page) await p.close().catch(() => {});
-// 지난 녹화의 Memora 로그인은 지운다 — 영상은 로그인부터 보인다.
+// 지난 녹화의 black-moa 로그인은 지운다 — 영상은 로그인부터 보인다.
 await (await ctx.newCDPSession(page)).send('Storage.clearDataForOrigin', { origin: O, storageTypes: 'all' }).catch((e) => log('clear', String(e)));
 const shot = async (n) => { try { await page.screenshot({ path: `${S}/fail-${n}.png` }); } catch {} };
 
 async function api(method, path, body) {
-  const r = await fetch(`${O}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': 'Mozilla/5.0 memora-demo' }, body: JSON.stringify({ email: 'demo@memo-ora.com', password: PW }) });
+  const r = await fetch(`${O}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': 'Mozilla/5.0 blackmoa-demo' }, body: JSON.stringify({ email: 'demo@black.memo-ora.com', password: PW }) });
   const tok = (await r.json()).access_token;
-  const res = await fetch(`${O}${path}`, { method, headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json', 'user-agent': 'Mozilla/5.0 memora-demo' }, body: body ? JSON.stringify(body) : undefined });
+  const res = await fetch(`${O}${path}`, { method, headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json', 'user-agent': 'Mozilla/5.0 blackmoa-demo' }, body: body ? JSON.stringify(body) : undefined });
   return res.json();
 }
 async function waitUrl(pred, ms = 30000) { const end = Date.now() + ms; while (Date.now() < end) { if (pred(page.url())) return true; await sleep(300); } return false; }
@@ -69,7 +69,7 @@ async function googleFlow(rec) {
     await page.waitForLoadState('domcontentloaded').catch(() => {});
     await sleep(1500);
     if (!shownId) {
-      rec.caption(`Google OAuth for Memora. The client ID in the address bar: ${CLIENT}`);
+      rec.caption(`Google OAuth for black-moa. The client ID in the address bar: ${CLIENT}`);
       shownId = await showClientId();
     }
     const acct = page.locator('[data-identifier]').first();
@@ -83,7 +83,7 @@ async function googleFlow(rec) {
     // 권한 화면: 권한마다 체크박스가 있다. 하나씩 짚어 보이고 [Select all] 뒤 [Continue].
     const all = page.getByText('Select all', { exact: true }).first();
     if (!selectedAll && await all.isVisible().catch(() => false)) {
-      rec.caption('Memora requests: contacts (read), Drive files used with the app (drive.file), calendar events (add accepted meetings), calendar (read)');
+      rec.caption('black-moa requests: contacts (read), Drive files used with the app (drive.file), calendar events (add accepted meetings), calendar (read)');
       await sleep(2500);
       for (const re of [/See and download your contacts/, /specific Google Drive files/, /View and edit events/, /See and download any calendar/]) {
         await point(page, page.getByText(re).first()).catch(() => {}); await sleep(1800);
@@ -95,7 +95,7 @@ async function googleFlow(rec) {
     }
     const btn = page.getByRole('button', { name: /^(Continue|Allow)$/ }).first();
     if (await btn.isVisible().catch(() => false)) {
-      if (!shownConsent && !selectedAll) { rec.caption('Sign in with Google: Memora receives the name, email address and profile picture'); await sleep(4000); }
+      if (!shownConsent && !selectedAll) { rec.caption('Sign in with Google: black-moa receives the name, email address and profile picture'); await sleep(4000); }
       shownConsent = true;
       await click(page, btn, 3500); continue;
     }
@@ -111,21 +111,21 @@ try {
   await page.goto(O, { waitUntil: 'domcontentloaded' }); await sleep(2500);
   rec.start();
   if (want('intro')) {
-    rec.caption('Memora (memo-ora.com) is a personal AI secretary. This video shows how it uses Google user data.');
+    rec.caption('black-moa (black.memo-ora.com) is a personal AI secretary. This video shows how it uses Google user data.');
     await moveTo(960, 500); await hold(4000);
     await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })); await hold(2500);
     rec.caption('The privacy policy is linked from every page');
     await click(page, page.locator('footer a[href="/privacy"]').first(), 3000);
     await waitUrl((u) => u.includes('/privacy'));
-    rec.caption('Privacy policy: how Memora accesses, uses, stores and shares Google user data (Limited Use)');
+    rec.caption('Privacy policy: how black-moa accesses, uses, stores and shares Google user data (Limited Use)');
     await page.evaluate(() => { const h = [...document.querySelectorAll('h2,h3')].find((x) => /Google/.test(x.textContent || '')); h?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); await hold(5000);
     await page.evaluate(() => { const h = [...document.querySelectorAll('p,li,strong')].find((x) => /Limited Use/.test(x.textContent || '')); h?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }); await hold(6000);
   }
 
   // ── 1. 로그인 ─────────────────────────────────────────────────
-  rec.caption('Sign in to Memora');
+  rec.caption('Sign in to black-moa');
   await page.goto(`${O}/login`, { waitUntil: 'domcontentloaded' }); await sleep(2000);
-  await click(page, page.locator('input[type=email]')); await type('demo@memo-ora.com');
+  await click(page, page.locator('input[type=email]')); await type('demo@black.memo-ora.com');
   await click(page, page.locator('input[type=password]')); await type(PW, 20);
   await click(page, page.locator('button[type=submit]'), 3000);
   await waitUrl((u) => u.includes('/app'));
@@ -140,20 +140,20 @@ try {
     await click(page, page.getByRole('button', { name: 'Connect Google' }), 1500);
     if (!(await googleFlow(rec))) throw new Error('google flow did not return');
     await sleep(3000);
-    rec.caption('Connected. Memora shows where each kind of Google data goes.');
+    rec.caption('Connected. black-moa shows where each kind of Google data goes.');
     await hold(5000);
   }
 
   // ── 3. calendar.readonly ─────────────────────────────────────
   if (want('calread')) {
-    rec.caption('calendar.readonly: Google Calendar events are imported into the Memora schedule (read only)');
+    rec.caption('calendar.readonly: Google Calendar events are imported into the black-moa schedule (read only)');
     await side('Schedule', 'My info');
     await click(page, page.getByRole('radio', { name: 'Connections' }).first(), 2500);
     await hold(3000);
     const fetchBtn = page.getByRole('button', { name: 'Fetch now' }).first();
     if (await fetchBtn.isVisible().catch(() => false)) { await click(page, fetchBtn, 4000); }
     await click(page, page.getByRole('radio', { name: 'Events' }).first(), 3000);
-    rec.caption('Events from Google Calendar now appear in the Memora schedule');
+    rec.caption('Events from Google Calendar now appear in the black-moa schedule');
     await hold(5000);
     const g = await googleTab('https://calendar.google.com/calendar/u/0/r/week?hl=en', 7000, 'The same events in the user\'s Google Calendar', rec);
     await g.close(); await page.bringToFront(); await sleep(1500);
@@ -196,7 +196,7 @@ try {
     await hold(6000);
     await vctx.close();
     await page.bringToFront(); await sleep(1500);
-    rec.caption('Alex accepts the request in the Inbox. Memora creates that one event in Google Calendar and invites the guest.');
+    rec.caption('Alex accepts the request in the Inbox. black-moa creates that one event in Google Calendar and invites the guest.');
     await side('Inbox');
     await hold(2000);
     await click(page, page.locator('main').getByText(/Jamie/).first(), 3000);
@@ -233,11 +233,11 @@ try {
 
   // ── 6. drive.file ────────────────────────────────────────────
   if (want('drive')) {
-    rec.caption('drive.file: Memora only touches files the user saves from Memora or picks in the Google Picker');
+    rec.caption('drive.file: black-moa only touches files the user saves from black-moa or picks in the Google Picker');
     await side('Files', 'My info');
     await hold(2500);
     await click(page, page.getByText('Northwind partnership brief.docx').first(), 2500);
-    rec.caption('Save a file from Memora into the user\'s Drive (a "Memora" folder)');
+    rec.caption('Save a file from black-moa into the user\'s Drive (a "black-moa" folder)');
     const popup = ctx.waitForEvent('page', { timeout: 30000 }).catch(() => null);
     await click(page, page.getByRole('button', { name: 'Save to Google Drive' }), 3000);
     await click(page, page.getByRole('button', { name: 'Open in Drive' }).first(), 1000).catch(() => {});
@@ -275,7 +275,7 @@ try {
   }
 
   // ── 7. 끝 ────────────────────────────────────────────────────
-  rec.caption('Users can disconnect Google at any time. Memora then revokes its access and deletes imported events.');
+  rec.caption('Users can disconnect Google at any time. black-moa then revokes its access and deletes imported events.');
   await side('Integrations', 'Account');
   await point(page, page.getByRole('button', { name: 'Disconnect' }).first()).catch(() => {});
   await hold(6000);

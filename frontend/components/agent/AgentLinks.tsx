@@ -154,7 +154,7 @@ function QrDialog({ link, onClose }: { link: ShareLink | null; onClose: () => vo
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {url ? <img src={url} alt="QR" className="h-64 w-64 rounded-xl border border-border bg-white p-2" /> : <Skeleton className="h-64 w-64" />}
         <div className="text-center text-sm text-muted-fg break-all">{link?.url}</div>
-        {url ? <a href={url} download={`memora-${link?.code}.png`} className={buttonLook("outline", "sm")}>{t("common.download")}</a> : null}
+        {url ? <a href={url} download={`blackmoa-${link?.code}.png`} className={buttonLook("outline", "sm")}>{t("common.download")}</a> : null}
       </div>
     </Dialog>
   );

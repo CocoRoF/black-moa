@@ -7,9 +7,9 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-import memora.models  # noqa: F401  (populate metadata)
-from memora.config import get_settings
-from memora.db.base import Base
+import blackmoa.models  # noqa: F401  (populate metadata)
+from blackmoa.config import get_settings
+from blackmoa.db.base import Base
 
 config = context.config
 if config.config_file_name is not None:

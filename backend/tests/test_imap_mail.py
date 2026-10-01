@@ -15,9 +15,9 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import Connection, IntegrationEmail
-from memora.services import imap_mail as IM
+from blackmoa.db.session import session_scope
+from blackmoa.models import Connection, IntegrationEmail
+from blackmoa.services import imap_mail as IM
 from tests.conftest import auth, signup
 
 APP_PW = "abcdefghijklmnop"
@@ -99,7 +99,7 @@ def fake_imap(monkeypatch):
 
 
 async def _sync(conn_id: str) -> dict:
-    from memora.worker.handlers import integration_sync
+    from blackmoa.worker.handlers import integration_sync
     async with session_scope() as db:
         out = await integration_sync(db, {"connection_id": conn_id})
         await db.commit()
@@ -162,7 +162,7 @@ async def test_a_mailbox_connects_with_an_app_password_and_the_secretary_reads_i
 
 
 def test_a_mail_server_on_our_own_network_is_refused(monkeypatch):
-    from memora.core.errors import ValidationFailed
+    from blackmoa.core.errors import ValidationFailed
 
     for bad in ("not a host", "http://imap.x.com", "a" * 300 + ".com"):
         with pytest.raises(ValidationFailed) as e:
@@ -171,14 +171,14 @@ def test_a_mail_server_on_our_own_network_is_refused(monkeypatch):
 
     def private(host, port):
         raise ValueError("blocked_host")
-    monkeypatch.setattr("memora.services.safe_http._public_ips", private)
+    monkeypatch.setattr("blackmoa.services.safe_http._public_ips", private)
     with pytest.raises(ValidationFailed) as e:
         IM._check_host("mail.internal.example.com")
     assert e.value.code == "imap_host_blocked"
 
 
 async def test_google_no_longer_asks_for_gmail(client: AsyncClient):
-    from memora.services import oauth as OA
+    from blackmoa.services import oauth as OA
     g = OA.get("google")
     assert "gmail_read" not in {c.id for c in g.capabilities}
     assert not any("gmail" in s for c in g.capabilities for s in c.scopes)

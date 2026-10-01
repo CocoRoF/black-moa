@@ -5,10 +5,10 @@ set -euo pipefail
 # then replace PID 1 with an unprivileged tini supervisor. gosu performs only a
 # one-way privilege drop; application processes never regain root.
 if [ "$(id -u)" -eq 0 ]; then
-  mkdir -p /data /home/memora/.claude /home/memora/.cache
+  mkdir -p /data /home/blackmoa/.claude /home/blackmoa/.cache
   marker=/data/.owner-uid-10001
   if [ ! -f "$marker" ]; then
-    echo "[entrypoint] migrating /data ownership to memora (uid 10001)"
+    echo "[entrypoint] migrating /data ownership to blackmoa (uid 10001)"
     chown -R 10001:10001 /data
     touch "$marker"
     chown 10001:10001 "$marker"
@@ -20,12 +20,12 @@ if [ "$(id -u)" -eq 0 ]; then
     # 그래서 **틀어진 것만** 볼 때마다 되돌린다. 멀쩡하면 find 한 번으로 끝난다.
     strays=$(find /data ! -user 10001 -print -quit 2>/dev/null || true)
     if [ -n "$strays" ]; then
-      echo "[entrypoint] repairing paths not owned by memora (uid 10001)"
+      echo "[entrypoint] repairing paths not owned by blackmoa (uid 10001)"
       find /data ! -user 10001 -exec chown 10001:10001 {} + 2>/dev/null || true
     fi
   fi
-  chown -R 10001:10001 /home/memora/.claude /home/memora/.cache
-  exec gosu memora /usr/bin/tini -- "$0" "$@"
+  chown -R 10001:10001 /home/blackmoa/.claude /home/blackmoa/.cache
+  exec gosu blackmoa /usr/bin/tini -- "$0" "$@"
 fi
 
 cd /app
@@ -34,7 +34,7 @@ case "${1:-api}" in
     echo "[entrypoint] alembic upgrade head"
     alembic upgrade head
     echo "[entrypoint] starting api"
-    exec uvicorn memora.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*' --timeout-keep-alive 75
+    exec uvicorn blackmoa.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*' --timeout-keep-alive 75
     ;;
   worker)
     echo "[entrypoint] waiting for schema"
@@ -50,7 +50,7 @@ case "${1:-api}" in
       echo "[entrypoint] schema did not reach alembic head" >&2
       exit 1
     fi
-    exec python -m memora.worker
+    exec python -m blackmoa.worker
     ;;
   migrate)
     exec alembic upgrade head

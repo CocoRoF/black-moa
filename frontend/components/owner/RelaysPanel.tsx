@@ -116,7 +116,7 @@ function NewRelayDialog({ open, onClose, defaultAgent, onCreated }: { open: bool
       footer={<><Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button><Button loading={m.isPending} disabled={!agent || !target.trim() || !message.trim()} onClick={() => m.mutate()}>{t("common.send")}</Button></>}>
       <div className="space-y-3">
         <Field label={t("relay.f_agent")}><Select value={agent} onChange={(e) => setAgent(e.target.value)}>{(agents.data?.items ?? []).filter((a) => a.status === "active").map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
-        <Field label={t("relay.f_target")} hint={t("relay.f_target_hint")}><Input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="https://memo-ora.com/secretary/…" /></Field>
+        <Field label={t("relay.f_target")} hint={t("relay.f_target_hint")}><Input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="https://black.memo-ora.com/secretary/…" /></Field>
         <Field label={t("relay.f_message")}><Textarea value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} className="min-h-[96px]" placeholder={t("relay.f_message_placeholder")} /></Field>
         <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
           <Field label={t("relay.f_purpose")} hint={t("common.optional")}><Input value={purpose} maxLength={200} onChange={(e) => setPurpose(e.target.value)} /></Field>

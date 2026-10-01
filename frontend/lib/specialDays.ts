@@ -13,7 +13,7 @@ import type { DayInfo, SpecialName } from "@/lib/api";
  */
 
 export const COUNTRY = "KR";
-const KEY = (y: number) => `memora.cal.v1.${COUNTRY}.${y}`;
+const KEY = (y: number) => `blackmoa.cal.v1.${COUNTRY}.${y}`;
 /** 음력 표가 닿는 해 — 서버와 같다. */
 const YEAR_MIN = 1990, YEAR_MAX = 2050;
 
@@ -100,7 +100,7 @@ export function forgetSpecialDays(qc: QueryClient): void {
   try {
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
-      if (k?.startsWith("memora.cal.")) localStorage.removeItem(k);
+      if (k?.startsWith("blackmoa.cal.")) localStorage.removeItem(k);
     }
   } catch { /* 무시 */ }
   qc.invalidateQueries({ queryKey: ["calendar-days"] });

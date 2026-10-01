@@ -1,6 +1,6 @@
 """다운로드 센터 (plan/64).
 
-GitHub 릴리스가 나가면 따로 하는 일 없이 Memora 에서 받을 수 있어야 한다. 저장소가 비공개라 서버가 릴리스를
+GitHub 릴리스가 나가면 따로 하는 일 없이 black-moa 에서 받을 수 있어야 한다. 저장소가 비공개라 서버가 릴리스를
 읽어 설치본을 제 저장소로 옮겨 두고, 서명된 주소로 내어 준다. GitHub 는 여기서 흉내 낸다.
 """
 from __future__ import annotations
@@ -11,16 +11,16 @@ from pathlib import Path
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import AppReleaseAsset, Job, User
-from memora.services import downloads as D
+from blackmoa.db.session import session_scope
+from blackmoa.models import AppReleaseAsset, Job, User
+from blackmoa.services import downloads as D
 from tests.conftest import auth, signup
 
 BLOB = bytes(range(256)) * 400  # 102,400 바이트
 
 
 def _rel(tag: str, *, rid: int, draft: bool = False, assets: list[tuple[int, str]] = ()) -> dict:
-    return {"id": rid, "tag_name": tag, "name": f"Memora 앱 {tag}", "body": "- 아바타가 그대로 섭니다", "draft": draft,
+    return {"id": rid, "tag_name": tag, "name": f"black-moa 앱 {tag}", "body": "- 아바타가 그대로 섭니다", "draft": draft,
             "prerelease": False, "published_at": f"2026-09-{10 + rid % 10:02d}T00:00:00Z",
             "assets": [{"id": aid, "name": n, "size": len(BLOB), "state": "uploaded"} for aid, n in assets]}
 
@@ -53,21 +53,21 @@ async def _mirror_all() -> None:
 
 
 def test_only_installers_are_offered():
-    assert D.classify("Memora_windows_0.8.1.exe") == ("windows", "x64", "exe")
-    assert D.classify("Memora_macos_arm64_0.8.1.dmg") == ("macos", "arm64", "dmg")
-    assert D.classify("Memora_macos_universal_0.8.3.dmg") == ("macos", "universal", "dmg")
-    assert D.classify("Memora_linux_0.8.1.deb") == ("linux", "x64", "deb")
+    assert D.classify("black-moa_windows_0.8.1.exe") == ("windows", "x64", "exe")
+    assert D.classify("black-moa_macos_arm64_0.8.1.dmg") == ("macos", "arm64", "dmg")
+    assert D.classify("black-moa_macos_universal_0.8.3.dmg") == ("macos", "universal", "dmg")
+    assert D.classify("black-moa_linux_0.8.1.deb") == ("linux", "x64", "deb")
     # 설치 프로그램이 아닌 것과 자동 업데이트용 부속은 사람이 받을 것이 아니다.
-    for n in ("Memora_linux_0.8.1.AppImage", "Memora_windows_0.8.1.exe.blockmap", "latest.yml", "latest-mac.yml", "builder-debug.yml"):
+    for n in ("black-moa_linux_0.8.1.AppImage", "black-moa_windows_0.8.1.exe.blockmap", "latest.yml", "latest-mac.yml", "builder-debug.yml"):
         assert D.classify(n) is None
     assert D.version_of("desktop-v0.8.1", "desktop-v") == "0.8.1"
 
 
 async def test_a_github_release_becomes_downloadable_here(client: AsyncClient, monkeypatch, tmp_path):
     fetched = _github(monkeypatch, [
-        _rel("desktop-v0.8.1", rid=81, assets=[(1, "Memora_windows_0.8.1.exe"), (2, "Memora_macos_arm64_0.8.1.dmg"),
-                                               (3, "Memora_linux_0.8.1.AppImage"), (4, "Memora_windows_0.8.1.exe.blockmap")]),
-        _rel("desktop-v0.8.2", rid=82, draft=True, assets=[(5, "Memora_windows_0.8.2.exe")]),   # 초안은 아직 아니다
+        _rel("desktop-v0.8.1", rid=81, assets=[(1, "black-moa_windows_0.8.1.exe"), (2, "black-moa_macos_arm64_0.8.1.dmg"),
+                                               (3, "black-moa_linux_0.8.1.AppImage"), (4, "black-moa_windows_0.8.1.exe.blockmap")]),
+        _rel("desktop-v0.8.2", rid=82, draft=True, assets=[(5, "black-moa_windows_0.8.2.exe")]),   # 초안은 아직 아니다
         _rel("v0.1.0", rid=10, assets=[(6, "server.tar.gz")]),                                  # 앱이 아닌 릴리스
     ], tmp_path)
     async with session_scope() as db:
@@ -90,7 +90,7 @@ async def test_a_github_release_becomes_downloadable_here(client: AsyncClient, m
     # 받는다: 로그인 머리 없이 서명된 주소만으로, 처음부터 끝까지.
     full = await client.get(win["url"])
     assert full.status_code == 200 and full.content == BLOB
-    assert "attachment" in full.headers["content-disposition"] and "Memora_windows_0.8.1.exe" in full.headers["content-disposition"]
+    assert "attachment" in full.headers["content-disposition"] and "black-moa_windows_0.8.1.exe" in full.headers["content-disposition"]
     assert full.headers["accept-ranges"] == "bytes"
     # 이어받기.
     part = await client.get(win["url"], headers={"Range": "bytes=100-199"})
@@ -105,7 +105,7 @@ async def test_a_github_release_becomes_downloadable_here(client: AsyncClient, m
 
 
 async def test_a_download_link_is_only_for_its_own_file(client: AsyncClient, monkeypatch, tmp_path):
-    _github(monkeypatch, [_rel("desktop-v0.9.0", rid=90, assets=[(11, "Memora_windows_0.9.0.exe"), (12, "Memora_linux_0.9.0.deb")])], tmp_path)
+    _github(monkeypatch, [_rel("desktop-v0.9.0", rid=90, assets=[(11, "black-moa_windows_0.9.0.exe"), (12, "black-moa_linux_0.9.0.deb")])], tmp_path)
     async with session_scope() as db:
         await D.sync(db, force=True)
     await _mirror_all()
@@ -119,7 +119,7 @@ async def test_a_download_link_is_only_for_its_own_file(client: AsyncClient, mon
 
 
 async def test_a_release_removed_on_github_disappears_here(client: AsyncClient, monkeypatch, tmp_path):
-    rel = _rel("desktop-v1.0.0", rid=100, assets=[(21, "Memora_windows_1.0.0.exe")])
+    rel = _rel("desktop-v1.0.0", rid=100, assets=[(21, "black-moa_windows_1.0.0.exe")])
     releases = [rel]
     _github(monkeypatch, releases, tmp_path)
     async with session_scope() as db:
@@ -143,7 +143,7 @@ async def test_the_admin_sets_where_releases_come_from(client: AsyncClient):
     _, utok = await signup(client)
     assert (await client.get("/api/admin/downloads", headers=auth(utok))).status_code == 403
     j = (await client.get("/api/admin/downloads", headers=auth(tok))).json()
-    assert j["repo"] == "CocoRoF/my-first-secretary-geny" and j["tag_prefix"] == "desktop-v" and j["enabled"] is True
+    assert j["repo"] == "CocoRoF/black-moa" and j["tag_prefix"] == "desktop-v" and j["enabled"] is True
     r = await client.put("/api/admin/downloads", json={"token": "ghp_" + "x" * 36}, headers=auth(tok))
     assert r.status_code == 200
     got = r.json()["token"]
@@ -153,12 +153,12 @@ async def test_the_admin_sets_where_releases_come_from(client: AsyncClient):
 
 async def test_the_release_ci_hands_over_a_short_lived_token(client: AsyncClient, monkeypatch, tmp_path):
     """오래 사는 토큰을 서버에 두지 않는다: CI 가 제 GITHUB_TOKEN 을 건네고, 다 옮기면 서버는 그것을 지운다."""
-    from memora.services import settings as S
+    from blackmoa.services import settings as S
     used: list[str] = []
 
     async def fake_list(repo, token):
         used.append(token)
-        return [_rel("desktop-v2.0.0", rid=200, assets=[(31, "Memora_windows_2.0.0.exe")])]
+        return [_rel("desktop-v2.0.0", rid=200, assets=[(31, "black-moa_windows_2.0.0.exe")])]
 
     def fake_mirror(repo, token, gid, key, mime, expect):
         used.append(token)
@@ -199,8 +199,8 @@ async def test_the_release_ci_hands_over_a_short_lived_token(client: AsyncClient
 async def test_one_installer_for_each_system(client: AsyncClient, monkeypatch, tmp_path):
     """같은 운영체제에 파일이 둘이면 사람은 무엇을 받아야 할지 헤맨다. 설치 프로그램 하나씩만."""
     releases = [_rel("desktop-v3.0.0", rid=300, assets=[
-        (41, "Memora_windows_3.0.0.exe"), (42, "Memora_macos_universal_3.0.0.dmg"), (43, "Memora_macos_arm64_3.0.0.dmg"),
-        (44, "Memora_linux_3.0.0.AppImage"), (45, "Memora_linux_3.0.0.deb")])]
+        (41, "black-moa_windows_3.0.0.exe"), (42, "black-moa_macos_universal_3.0.0.dmg"), (43, "black-moa_macos_arm64_3.0.0.dmg"),
+        (44, "black-moa_linux_3.0.0.AppImage"), (45, "black-moa_linux_3.0.0.deb")])]
     _github(monkeypatch, releases, tmp_path)
     async with session_scope() as db:
         await D.sync(db, force=True)
@@ -212,7 +212,7 @@ async def test_one_installer_for_each_system(client: AsyncClient, monkeypatch, t
 
     # 예전 판(universal 이 없던 때)의 맥은 칩마다 하나씩 남는다.
     releases[0]["assets"] = [a for a in releases[0]["assets"] if "universal" not in a["name"]] + [
-        {"id": 46, "name": "Memora_macos_x64_3.0.0.dmg", "size": len(BLOB), "state": "uploaded"}]
+        {"id": 46, "name": "black-moa_macos_x64_3.0.0.dmg", "size": len(BLOB), "state": "uploaded"}]
     async with session_scope() as db:
         await D.sync(db, force=True)
     await _mirror_all()

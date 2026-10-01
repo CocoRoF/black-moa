@@ -6,7 +6,7 @@ import type { MetadataRoute } from "next";
 export const dynamic = "force-dynamic";
 
 export default function robots(): MetadataRoute.Robots {
-  const site = (process.env.PUBLIC_URL || process.env.MEMORA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL || "").replace(/\/$/, "");
+  const site = (process.env.PUBLIC_URL || process.env.BLACKMOA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL || "").replace(/\/$/, "");
   return {
     rules: [{ userAgent: "*", allow: "/", disallow: ["/app", "/admin", "/api"] }],
     ...(site ? { sitemap: `${site}/sitemap.xml`, host: site } : {}),

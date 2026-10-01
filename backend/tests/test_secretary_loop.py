@@ -11,10 +11,10 @@ import uuid as _uuid
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.core import visibility as VIS
-from memora.db.session import session_scope
-from memora.models import BlogPost, KnowledgeDocument
-from memora.models import User as _U
+from blackmoa.core import visibility as VIS
+from blackmoa.db.session import session_scope
+from blackmoa.models import BlogPost, KnowledgeDocument
+from blackmoa.models import User as _U
 from tests.conftest import auth, signup, square_name
 from tests.test_domain import _run_jobs
 
@@ -29,8 +29,8 @@ async def _verified(user_id: str) -> None:
 
 async def _agent_for(owner_id: str):
     """외부인 대화를 할 비서 하나 — 기본값 그대로(정보 줄 켜짐)."""
-    from memora.models import Agent
-    from memora.services import outsider as OUT
+    from blackmoa.models import Agent
+    from blackmoa.services import outsider as OUT
     async with session_scope() as db:
         a = Agent(owner_id=_uuid.UUID(owner_id), name="비서", provider="fake", model_id="fake-1", outsider=dict(OUT.DEFAULTS))
         db.add(a)
@@ -39,8 +39,8 @@ async def _agent_for(owner_id: str):
 
 
 async def _reaches(agent, doc_id, viewer: str) -> bool:
-    from memora.models import Agent
-    from memora.services import outsider as OUT
+    from blackmoa.models import Agent
+    from blackmoa.services import outsider as OUT
     async with session_scope() as db:
         a = await db.get(Agent, agent.id)
         sc = await OUT.scope(db, a, "knowledge", viewer)
@@ -104,7 +104,7 @@ async def test_search_gives_each_reader_only_what_is_theirs(client: AsyncClient)
     [모두 공개]만. 가운데가 이 서비스가 중간 단계를 두는 이유다: 예전에는 인맥에게만
     쓴 글이 인맥에게도 닿지 못했다.
     """
-    from memora.services import knowledge as K
+    from blackmoa.services import knowledge as K
 
     user, tok = await signup(client)
     for body, vis in [("모두에게 열어 둔 공지", "public"),
@@ -114,8 +114,8 @@ async def test_search_gives_each_reader_only_what_is_theirs(client: AsyncClient)
     assert await _run_jobs(["knowledge.index"]) >= 1
 
     agent = await _agent_for(user["id"])
-    from memora.models import Agent
-    from memora.services import outsider as OUT
+    from blackmoa.models import Agent
+    from blackmoa.services import outsider as OUT
     async with session_scope() as db:
         rows = (await db.execute(select(KnowledgeDocument).where(
             KnowledgeDocument.owner_id == _uuid.UUID(user["id"])))).scalars().all()
@@ -144,7 +144,7 @@ async def test_a_photo_only_post_is_material_too(client: AsyncClient):
     비서가 사진에서 본 것을 한 줄로 적어 두면 그때부터 재료가 된다. 적기 전에는 비서에게
     빈 종이라 문서를 만들지 않는다: 빈 문서를 만드는 것보다 없는 편이 낫다.
     """
-    from memora.services import blog as B
+    from blackmoa.services import blog as B
 
     user, tok = await signup(client)
     async with session_scope() as db:
@@ -168,7 +168,7 @@ async def test_every_post_with_photos_gets_looked_at(client: AsyncClient):
     두 편이 **둘 다** 안 읽힌 채로 남아 있었다. "오늘 회식" 이라고 적고 가게 사진을 올린
     글에서, 적힌 말과 찍힌 것은 서로 다른 사실이다.
     """
-    from memora.services import blog as B
+    from blackmoa.services import blog as B
 
     user, tok = await signup(client)
     queued: list[str] = []
@@ -178,7 +178,7 @@ async def test_every_post_with_photos_gets_looked_at(client: AsyncClient):
 
     async with session_scope() as db:
         me = await db.get(_U, _uuid.UUID(user["id"]))
-        import memora.services.jobs as J
+        import blackmoa.services.jobs as J
 
         real = J.enqueue
         J.enqueue = fake_enqueue
@@ -215,8 +215,8 @@ async def test_the_square_never_reaches_the_secretary(client: AsyncClient):
 
     내 글이 비서에게 가는 길은 [피드] 하나다. 거기는 실명이고 내 집이다.
     """
-    from memora.models import KnowledgeDocument
-    from memora.services import community as C
+    from blackmoa.models import KnowledgeDocument
+    from blackmoa.services import community as C
 
     user, tok = await signup(client)
     await _verified(user["id"])
@@ -300,7 +300,7 @@ async def test_a_square_name_cannot_be_changed_every_day(client: AsyncClient):
     """
     from datetime import UTC, datetime, timedelta
 
-    from memora.services import community as C
+    from blackmoa.services import community as C
 
     tag = _uuid.uuid4().hex[:6]
     user, tok = await signup(client)
@@ -334,6 +334,6 @@ async def test_the_visitor_simulator_never_teaches_the_secretary(client: AsyncCl
     대한 사실이 되면 안 된다 (plan/45 §8)."""
     import inspect
 
-    import memora.pipeline.runner as R
+    import blackmoa.pipeline.runner as R
 
     assert 'conv.kind != "agent" and not ids["simulated"]' in inspect.getsource(R)

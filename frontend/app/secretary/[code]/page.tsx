@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // In the path, not a query: scrapers are unreliable about query strings on og:image.
   const card = cardUrl(code, a);
   // Absolute, or a crawler is handed http://localhost:3000/… and shows an empty card.
-  const site = process.env.PUBLIC_URL || process.env.MEMORA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL;
+  const site = process.env.PUBLIC_URL || process.env.BLACKMOA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL;
   const base = site ? new URL(site) : undefined;
   return {
     ...(base ? { metadataBase: base } : {}),

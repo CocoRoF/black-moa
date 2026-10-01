@@ -23,9 +23,9 @@ async def _handed(client, tok, agent_id, conv_id, name, data, mime):
 
 
 async def _ingest_pending():
-    from memora.db.session import session_scope
-    from memora.models import AgentFile
-    from memora.services import files as FILES
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentFile
+    from blackmoa.services import files as FILES
     async with session_scope() as db:
         ids = (await db.execute(select(AgentFile.id).where(AgentFile.status == "pending"))).scalars().all()
     for i in ids:
@@ -35,9 +35,9 @@ async def _ingest_pending():
 
 
 async def test_words_deep_inside_a_file_are_found_and_it_can_become_knowledge(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import Agent, AgentFile, User
-    from memora.pipeline.tools.file_tools import FilesList
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, AgentFile, User
+    from blackmoa.pipeline.tools.file_tools import FilesList
 
     user, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "찾기비서"}, headers=auth(tok))).json()
@@ -65,9 +65,9 @@ async def test_words_deep_inside_a_file_are_found_and_it_can_become_knowledge(cl
 
 
 async def test_opening_an_owner_file_to_visitors(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import Agent, AgentFile, User
-    from memora.pipeline.tools.file_tools import FilesList
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, AgentFile, User
+    from blackmoa.pipeline.tools.file_tools import FilesList
 
     user, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "공개비서"}, headers=auth(tok))).json()
@@ -80,7 +80,7 @@ async def test_opening_an_owner_file_to_visitors(client: AsyncClient):
     visitor = SimpleNamespace(id=uuid.uuid4())
     vctx = SimpleNamespace(owner=owner, owner_id=owner.id, agent=a, audience="visitor", visitor=visitor, relay_id=None,
                            vision=True, viewer_level="stranger")
-    from memora.services import outsider as OUT
+    from blackmoa.services import outsider as OUT
 
     async def turn() -> None:
         # 러너가 턴마다 하는 것 — 이 비서의 [지식] 탭대로 이 사람에게 쓸 것을 정한다 (plan/57).

@@ -1,5 +1,5 @@
 /**
- * 글꼴은 앱에 함께 싣는다. 서버에 못 닿을 때도 틀은 메모라의 글씨(Pretendard)로 말해야 한다.
+ * 글꼴은 앱에 함께 싣는다. 서버에 못 닿을 때도 틀은 블랙모아의 글씨(Pretendard)로 말해야 한다.
  */
 import url from 'pretendard/dist/web/variable/woff2/PretendardVariable.woff2?url';
 

@@ -26,7 +26,7 @@ depends_on = None
 def upgrade() -> None:
     import sqlalchemy as sa
 
-    from memora.services.community import pen_name_for
+    from blackmoa.services.community import pen_name_for
 
     conn = op.get_bind()
     taken = {

@@ -39,7 +39,7 @@ export function CompanyHome() {
   const d = home.data;
   return (
     <Page>
-      {/* The hero: Memora's own cover, the title, and the one control that matters. */}
+      {/* The hero: black-moa's own cover, the title, and the one control that matters. */}
       <section className="relative mb-8 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
         <div className="absolute inset-x-0 top-0 h-[104px]" style={{ background: coverFallback() }} aria-hidden />
         <div className="relative px-5 pb-5 pt-6 md:px-8 md:pb-7 md:pt-8">

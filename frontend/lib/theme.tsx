@@ -4,13 +4,13 @@ import { storageGet, storageSet } from "./utils";
 import { desktopHost, inAppShell } from "./desktop";
 
 export type ThemePref = "light" | "dark" | "system";
-const KEY = "memora:theme";
+const KEY = "blackmoa:theme";
 
 /** Inline script (runs before hydration) — prevents FOUC.
  *
- *  PC 앱의 틀 안(plan/62)에서는 테마를 앱이 정해 다리(__memoraHost.theme)로 건넨다.
+ *  PC 앱의 틀 안(plan/62)에서는 테마를 앱이 정해 다리(__blackmoaHost.theme)로 건넨다.
  *  같은 자리에서 `data-app-shell` 을 달아, 서버가 그린 머리줄·바닥글을 그리기 전에 CSS 로 숨긴다. */
-export const THEME_INIT_SCRIPT = `(function(){try{var p=localStorage.getItem('${KEY}')||'system';var h=window.__memoraHost;if(h&&h.desktop&&h.shell>=2){p=h.theme==='dark'||h.theme==='light'?h.theme:'system';document.documentElement.setAttribute('data-app-shell','');}var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var c=document.documentElement.classList;d?c.add('dark'):c.remove('dark');document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var p=localStorage.getItem('${KEY}')||'system';var h=window.__blackmoaHost;if(h&&h.desktop&&h.shell>=2){p=h.theme==='dark'||h.theme==='light'?h.theme:'system';document.documentElement.setAttribute('data-app-shell','');}var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var c=document.documentElement.classList;d?c.add('dark'):c.remove('dark');document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();`;
 
 interface Ctx { pref: ThemePref; resolved: "light" | "dark"; setPref: (p: ThemePref) => void }
 const ThemeCtx = createContext<Ctx>({ pref: "system", resolved: "light", setPref: () => {} });

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 /* Google Drive 와 [파일] (plan/75).
 
    가져오기는 Google 의 파일 선택 창에서 고른 파일을 [내 정보 → 파일]로, 저장은 [파일]의 파일을 내 Drive 의
-   "Memora" 폴더로. 이 앱은 고른 파일과 스스로 만든 파일만 열 수 있다(drive.file). 아직 Drive 를 잇지 않았으면
+   "black-moa" 폴더로. 이 앱은 고른 파일과 스스로 만든 파일만 열 수 있다(drive.file). 아직 Drive 를 잇지 않았으면
    먼저 잇고 이 화면으로 돌아온다. */
 
 const MAX = 10;

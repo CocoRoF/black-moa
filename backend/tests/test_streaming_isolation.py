@@ -20,7 +20,7 @@ _async = pytest.mark.asyncio
 
 
 def checked_out() -> int:
-    from memora.db.session import engine
+    from blackmoa.db.session import engine
 
     return engine.pool.checkedout()
 
@@ -36,7 +36,7 @@ async def test_release_db_hands_back_the_session_parked_on_the_request():
     """
     from starlette.requests import Request
 
-    from memora.core.deps import release_db
+    from blackmoa.core.deps import release_db
 
     class Recording:
         closed = False
@@ -57,7 +57,7 @@ async def test_release_db_hands_back_the_session_parked_on_the_request():
 @_async
 async def test_get_session_parks_the_session_where_release_db_looks_for_it():
     """The two halves of the mechanism have to agree on where the session lives."""
-    from memora.db.session import get_session
+    from blackmoa.db.session import get_session
 
     seen: dict = {}
     req = _FakeRequest(seen)
@@ -98,7 +98,7 @@ def test_every_event_stream_releases_its_request_session():
     itself — but only if the caller hands it the request. Any other event-stream response
     has to do it explicitly.
     """
-    api = pathlib.Path(__file__).resolve().parents[1] / "src" / "memora" / "api"
+    api = pathlib.Path(__file__).resolve().parents[1] / "src" / "blackmoa" / "api"
     offenders = []
     for f in api.rglob("*.py"):
         src = f.read_text()
@@ -115,7 +115,7 @@ def test_every_event_stream_releases_its_request_session():
 async def test_an_oversized_upload_is_refused_without_being_held_in_memory():
     """A body at nginx's ceiling used to be read in full and only then measured against a
     limit a fraction of its size. The refusal has to happen while reading."""
-    from memora.services import uploads as U
+    from blackmoa.services import uploads as U
 
     read = {"bytes": 0}
 

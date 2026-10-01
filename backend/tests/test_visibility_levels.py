@@ -10,10 +10,10 @@ import uuid as _uuid
 
 from httpx import AsyncClient
 
-from memora.db.session import session_scope
-from memora.models import OwnerProfile
-from memora.services import people as P
-from memora.services import profile as PF
+from blackmoa.db.session import session_scope
+from blackmoa.models import OwnerProfile
+from blackmoa.services import people as P
+from blackmoa.services import profile as PF
 from tests.conftest import auth, signup
 from tests.test_blog import _open_page
 
@@ -74,8 +74,8 @@ async def test_a_connection_and_a_verified_colleague_are_known(client: AsyncClie
     # A colleague nobody connected with, proven by the same company, is known too.
     colleague, _ = await signup(client)
     async with session_scope() as db:
-        from memora.models import Company, CompanyDomain, CompanyVerification
-        from memora.services.companies.merge import normalise_name
+        from blackmoa.models import Company, CompanyDomain, CompanyVerification
+        from blackmoa.services.companies.merge import normalise_name
         c = Company(name=f"같은회사{_uuid.uuid4().hex[:5]}", name_norm=normalise_name("같은회사"), market="코스닥")
         db.add(c)
         await db.flush()
@@ -120,7 +120,7 @@ async def test_a_conversation_really_is_held_at_the_visitors_level(client: Async
     """
     import uuid as _uuid
 
-    from memora.pipeline.runtime import runtime_key, runtimes
+    from blackmoa.pipeline.runtime import runtime_key, runtimes
     from tests.conftest import read_sse
 
     me, mytok = await signup(client)

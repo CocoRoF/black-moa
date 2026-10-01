@@ -22,7 +22,7 @@ for k, b in enumerate(blurs):
                  f"[m{k}][b{k}]overlay={b['x']}:{b['y']}:enable='between(t,{b['t0']:.2f},{t1:.2f})'[v{k}]")
     last = f"v{k}"
 graph.append(f"[{last}]" + ",".join(filters) + "[out]")
-out = sys.argv[1] if len(sys.argv) > 1 else f"{S}/memora-oauth-demo.mp4"
+out = sys.argv[1] if len(sys.argv) > 1 else f"{S}/blackmoa-oauth-demo.mp4"
 subprocess.check_call(["ffmpeg", "-y", "-loglevel", "error", "-i", f"{S}/demo-raw.mp4", "-filter_complex", ";".join(graph), "-map", "[out]",
                        "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-pix_fmt", "yuv420p", "-movflags", "+faststart", out])
 print(out, os.path.getsize(out))

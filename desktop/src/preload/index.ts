@@ -116,4 +116,4 @@ const bridge: Bridge = {
   },
 };
 
-contextBridge.exposeInMainWorld('memora', bridge);
+contextBridge.exposeInMainWorld('blackmoa', bridge);

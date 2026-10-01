@@ -133,7 +133,7 @@ const MESSAGES: Record<string, { ko: string; en: string }> = {
   state_browser_mismatch: { ko: "로그인을 시작한 화면과 달라요. 이 화면에서 다시 시작해 주세요.", en: "This didn't start here. Please start again from this page." },
   invalid_state: { ko: "가입 마무리 링크가 만료됐어요. 처음부터 다시 시작해 주세요.", en: "This sign-up link has expired. Please start again." },
   id_token_invalid: { ko: "로그인 정보를 확인하지 못했어요. 다시 시도해 주세요.", en: "Couldn't confirm who you are. Please try again." },
-  identity_taken: { ko: "이 계정은 이미 다른 Memora 계정에 이어져 있어요.", en: "That account is already linked to another Memora account." },
+  identity_taken: { ko: "이 계정은 이미 다른 black-moa 계정에 이어져 있어요.", en: "That account is already linked to another black-moa account." },
   identity_provider_linked: { ko: "같은 서비스의 다른 계정이 이미 이어져 있어요. 그 계정을 먼저 떼어 주세요.", en: "Another account from this service is already linked. Remove it first." },
   identity_not_found: { ko: "이 로그인 방법을 찾을 수 없어요.", en: "That sign-in method was not found." },
   last_login_method: { ko: "하나 남은 로그인 방법이라 뗄 수 없어요. 비밀번호를 먼저 만들어 주세요.", en: "It's your only way in. Set a password first." },

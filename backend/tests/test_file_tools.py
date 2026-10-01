@@ -42,9 +42,9 @@ async def _given(client, tok, agent_id, conv_id, name, data, mime):
 
 
 async def _world(client):
-    from memora.db.session import session_scope
-    from memora.models import Agent, AgentFile, User, Visitor
-    from memora.services import files as FILES
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, AgentFile, User, Visitor
+    from blackmoa.services import files as FILES
 
     user, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "도구비서"}, headers=auth(tok))).json()
@@ -59,7 +59,7 @@ async def _world(client):
         v2 = Visitor(agent_id=a.id, owner_id=owner.id, display_name="손님2", token_hash=uuid.uuid4().hex, first_seen_at=datetime.now(UTC), last_seen_at=datetime.now(UTC))
         db.add_all([v1, v2])
         await db.flush()
-        from memora.services import uploads as U
+        from blackmoa.services import uploads as U
         up = await U.store(db, owner.id, kind="attachment", filename="손님사진.jpg", mime="image/jpeg", data=_jpeg())
         await FILES.record(db, agent_id=a.id, upload=up, source="public", scope="visitor", visitor_id=v1.id)
         for f in (await db.execute(select(AgentFile).where(AgentFile.agent_id == a.id))).scalars().all():
@@ -76,7 +76,7 @@ def _ctx(w, audience="owner", visitor=None, vision=True, relay_id=None):
 
 
 async def test_the_fence_owner_sees_all_a_visitor_only_their_own(client: AsyncClient):
-    from memora.pipeline.tools.file_tools import FilesList
+    from blackmoa.pipeline.tools.file_tools import FilesList
 
     w = await _world(client)
     owner_view = await FilesList(_ctx(w)).run({})
@@ -89,10 +89,10 @@ async def test_the_fence_owner_sees_all_a_visitor_only_their_own(client: AsyncCl
 
 
 async def test_read_view_and_the_prompt_block(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import AgentFile
-    from memora.pipeline.tools.file_tools import FileRead, FileView
-    from memora.services import files as FILES
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentFile
+    from blackmoa.pipeline.tools.file_tools import FileRead, FileView
+    from blackmoa.services import files as FILES
 
     w = await _world(client)
     async with session_scope() as db:
@@ -117,7 +117,7 @@ async def test_read_view_and_the_prompt_block(client: AsyncClient):
 
 
 def test_mcp_gets_pictures_in_its_own_shape():
-    from memora.api.internal_mcp import _to_mcp_content
+    from blackmoa.api.internal_mcp import _to_mcp_content
 
     out = _to_mcp_content([{"type": "text", "text": "a"},
                            {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": "QUJD"}}])
@@ -125,7 +125,7 @@ def test_mcp_gets_pictures_in_its_own_shape():
 
 
 def test_this_turns_attachments_carry_their_file_ids():
-    from memora.pipeline.runner import _build_input
+    from blackmoa.pipeline.runner import _build_input
 
     class Block:
         text = ""

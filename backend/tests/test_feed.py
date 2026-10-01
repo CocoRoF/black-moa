@@ -101,8 +101,8 @@ async def test_nobody_can_ask_what_a_person_wrote_in_the_square(client: AsyncCli
     """
     author, atok = await signup(client)
     reader, rtok = await signup(client)
-    async with __import__("memora.db.session", fromlist=["session_scope"]).session_scope() as db:
-        from memora.models import User
+    async with __import__("blackmoa.db.session", fromlist=["session_scope"]).session_scope() as db:
+        from blackmoa.models import User
         u = await db.get(User, _uuid.UUID(author["id"]))
         u.email_verified_at = __import__("datetime").datetime.now(__import__("datetime").UTC)
         await db.commit()
@@ -171,8 +171,8 @@ async def test_nobody_can_ask_what_a_person_wrote_in_the_square(client: AsyncCli
 
 async def test_a_suspended_account_goes_quiet_in_other_peoples_feeds(client: AsyncClient):
     """Its page already 404s. The feed must not be the one place it still speaks."""
-    from memora.db.session import session_scope
-    from memora.models import User
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
 
     _, mytok = await signup(client)
     writer, wtok = await signup(client)

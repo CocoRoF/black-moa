@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { App } from 'electron';
 
-const LINUX_ENTRY = 'memora.desktop';
+const LINUX_ENTRY = 'blackmoa.desktop';
 
 const linuxAutostartPath = (home: string): string => join(home, '.config', 'autostart', LINUX_ENTRY);
 
@@ -46,7 +46,7 @@ export function applyAutostart(
     const escaped = exec.replace(/%/g, '%%');
     writeFileSync(
       path,
-      ['[Desktop Entry]', 'Type=Application', 'Name=Memora', `Exec="${escaped}" --hidden`, 'Terminal=false', 'X-GNOME-Autostart-enabled=true', ''].join('\n'),
+      ['[Desktop Entry]', 'Type=Application', 'Name=black-moa', `Exec="${escaped}" --hidden`, 'Terminal=false', 'X-GNOME-Autostart-enabled=true', ''].join('\n'),
       'utf8',
     );
     return { enabled: true, applied: true };

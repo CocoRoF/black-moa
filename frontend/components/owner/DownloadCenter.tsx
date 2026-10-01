@@ -68,7 +68,7 @@ export function DownloadCenterPage() {
       ) : (
         <div className="space-y-5">
           <Hero release={latest} os={os} arch={arch} />
-          {/* 한 줄에 하나씩: 메모라 앱 → 설치하는 법 → 이전 버전. */}
+          {/* 한 줄에 하나씩: 블랙모아 앱 → 설치하는 법 → 이전 버전. */}
           <Card className="p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-semibold">{t("dl.install")}</h2>

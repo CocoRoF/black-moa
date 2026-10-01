@@ -1,6 +1,6 @@
-/* Memora — put a secretary on your own site (plan/41 §8, M6).
+/* black-moa — put a secretary on your own site (plan/41 §8, M6).
  *
- * <script src="https://memo-ora.com/embed.js" data-code="YOUR-CODE" defer></script>
+ * <script src="https://black.memo-ora.com/embed.js" data-code="YOUR-CODE" defer></script>
  *
  * One button in the corner and one iframe, created only when somebody opens it. No
  * dependencies, no globals beyond a single guard, and nothing is read from the host page:
@@ -8,8 +8,8 @@
  */
 (function () {
   "use strict";
-  if (window.__memoraEmbed) return;
-  window.__memoraEmbed = true;
+  if (window.__blackmoaEmbed) return;
+  window.__blackmoaEmbed = true;
 
   var me = document.currentScript;
   if (!me) return;
@@ -41,7 +41,7 @@
     if (frame) return frame;
     frame = document.createElement("iframe");
     frame.src = origin + "/secretary/" + encodeURIComponent(code) + "?embed=1";
-    frame.title = label || "Memora";
+    frame.title = label || "black-moa";
     frame.setAttribute("allow", "microphone; clipboard-write");
     frame.style.cssText = [
       "position:fixed", "bottom:88px", side + ":20px", "z-index:" + z,

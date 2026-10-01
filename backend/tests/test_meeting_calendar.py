@@ -13,8 +13,8 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import Agent, Connection, InboxItem
+from blackmoa.db.session import session_scope
+from blackmoa.models import Agent, Connection, InboxItem
 from tests.conftest import auth, signup
 
 
@@ -36,7 +36,7 @@ async def _meeting(owner_id: str, *, slots_iso: list[str] | None = None, email: 
 
 async def _providers_on(on: bool) -> None:
     """관리자 [연결] 에서 Google·카카오를 켠다 (plan/59) — 꺼져 있으면 바깥 달력에 넣지 않는다."""
-    from memora.services import settings as S
+    from blackmoa.services import settings as S
     async with session_scope() as db:
         for p in ("google", "kakao"):
             await S.put(db, f"oauth.{p}.enabled", on)
@@ -81,7 +81,7 @@ async def test_accepting_writes_the_event_and_invites_the_visitor(client: AsyncC
         seen.update(kw)
         return {"id": "ev_1", "html_link": "https://calendar.google.com/ev_1"}
 
-    monkeypatch.setattr("memora.services.google.create_event", fake_create)
+    monkeypatch.setattr("blackmoa.services.google.create_event", fake_create)
     start = _when()
     r = await client.post(f"/api/inbox/{iid}/status", json={"status": "accepted", "start_at": start, "duration_minutes": 45},
                           headers=auth(tok))
@@ -136,7 +136,7 @@ async def test_the_acceptance_stands_when_the_calendar_cannot_be_written(client:
     async def boom(db, conn, **kw):
         raise RuntimeError("google said no")
 
-    monkeypatch.setattr("memora.services.google.create_event", boom)
+    monkeypatch.setattr("blackmoa.services.google.create_event", boom)
     async with session_scope() as db:
         c = (await db.execute(select(Connection).where(Connection.owner_id == _uuid.UUID(user["id"])))).scalars().first()
         c.capabilities = ["calendar_write"]
@@ -166,7 +166,7 @@ async def test_the_meeting_goes_to_the_kakao_talk_calendar_too(client: AsyncClie
         seen.update(kw)
         return {"id": "kev_1", "html_link": ""}
 
-    monkeypatch.setattr("memora.services.kakao.create_event", fake_create)
+    monkeypatch.setattr("blackmoa.services.kakao.create_event", fake_create)
     start = _when()
     r = await client.post(f"/api/inbox/{iid}/status", json={"status": "accepted", "start_at": start, "duration_minutes": 30},
                           headers=auth(tok))
@@ -175,7 +175,7 @@ async def test_the_meeting_goes_to_the_kakao_talk_calendar_too(client: AsyncClie
     assert "김민수" in seen["summary"]
     # 동기화해 온 같은 일정과 겹쳐 보이지 않는다.
     async with session_scope() as db:
-        from memora.models import IntegrationEvent
+        from blackmoa.models import IntegrationEvent
         c = (await db.execute(select(Connection).where(Connection.owner_id == _uuid.UUID(user["id"])))).scalars().first()
         db.add(IntegrationEvent(owner_id=c.owner_id, connection_id=c.id, ext_id="kev_1", title="김민수님과의 미팅",
                                 start_at=seen["start"], end_at=seen["end"], all_day=False, status="confirmed", busy=True))
@@ -193,7 +193,7 @@ async def test_nothing_is_pushed_while_the_admin_has_the_provider_off(client: As
         called.append(kw)
         return {"id": "x"}
 
-    monkeypatch.setattr("memora.services.google.create_event", fake_create)
+    monkeypatch.setattr("blackmoa.services.google.create_event", fake_create)
     await _providers_on(False)
     iid = await _meeting(user["id"])
     r = await client.post(f"/api/inbox/{iid}/status", json={"status": "accepted", "start_at": _when()}, headers=auth(tok))

@@ -108,30 +108,30 @@ async def test_refresh_rotation_and_reuse_detection(client: AsyncClient):
     cookie twice and was signing real people out of every device. So the line is now drawn
     by time: within the grace window it is the race, outside it is theft.
     """
-    from memora.services import accounts as A
+    from blackmoa.services import accounts as A
 
     u, tok = await signup(client)
-    cookie = client.cookies.get("memora_refresh")
+    cookie = client.cookies.get("blackmoa_refresh")
     assert cookie
     r1 = await client.post("/api/auth/refresh")
     assert r1.status_code == 200
-    new_cookie = client.cookies.get("memora_refresh")
+    new_cookie = client.cookies.get("blackmoa_refresh")
     assert new_cookie != cookie, "the token did not rotate"
 
     # the racing twin, arriving right behind its replacement
-    client.cookies.set("memora_refresh", cookie, path="/api/auth")
+    client.cookies.set("blackmoa_refresh", cookie, path="/api/auth")
     assert (await client.post("/api/auth/refresh")).status_code == 200
 
     # the same replay, once the race is over
     grace, A.REFRESH_GRACE_S = A.REFRESH_GRACE_S, 0.0
     try:
-        client.cookies.set("memora_refresh", cookie, path="/api/auth")
+        client.cookies.set("blackmoa_refresh", cookie, path="/api/auth")
         assert (await client.post("/api/auth/refresh")).status_code == 401
     finally:
         A.REFRESH_GRACE_S = grace
 
     # …and the family went with it: every sibling token is dead too
-    client.cookies.set("memora_refresh", new_cookie, path="/api/auth")
+    client.cookies.set("blackmoa_refresh", new_cookie, path="/api/auth")
     assert (await client.post("/api/auth/refresh")).status_code == 401
 
 
@@ -139,14 +139,14 @@ async def test_a_session_from_before_the_rename_still_refreshes(client: AsyncCli
     """The cookie was renamed on 2026-09-09. Reading the old name is what keeps every
     already-signed-in browser signed in; without it the rename is a silent mass logout."""
     await signup(client)
-    legacy = client.cookies.get("memora_refresh")
+    legacy = client.cookies.get("blackmoa_refresh")
     client.cookies.clear()
     client.cookies.set("mfsg_refresh", legacy, path="/api/auth")
 
     r = await client.post("/api/auth/refresh")
     assert r.status_code == 200, r.text
     # ...and the session comes back under the new name, so the fallback is needed once.
-    assert client.cookies.get("memora_refresh")
+    assert client.cookies.get("blackmoa_refresh")
 
 
 async def test_a_share_link_lives_under_its_own_prefix(client: AsyncClient):
@@ -155,7 +155,7 @@ async def test_a_share_link_lives_under_its_own_prefix(client: AsyncClient):
     A new top-level route could shadow a link somebody had already printed, and the only
     thing standing between them was a hand-kept list of forbidden words.
     """
-    from memora.core.codes import LINK_PREFIX
+    from blackmoa.core.codes import LINK_PREFIX
 
     _user, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "서기"}, headers=auth(tok))).json()
@@ -192,9 +192,9 @@ async def test_signup_names_reach_the_profile(client: AsyncClient):
 
     # Seeding never overwrites: an edited profile survives a later seed.
     await client.put("/api/users/me/profile", json={"data": {"preferred_name": "다른이름"}}, headers=auth(tok))
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services import profile as PF
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services import profile as PF
     async with session_scope() as db:
         u = (await db.execute(select(User).where(User.email == email))).scalars().first()
         await PF.seed_from_account(db, u)
@@ -240,9 +240,9 @@ async def test_a_plan_narrows_the_pool_it_draws_from(client: AsyncClient):
     this plan may use of it. A plan with no picks gets everything."""
     from sqlalchemy import select as _select
 
-    from memora.db.session import session_scope
-    from memora.models import ModelCatalog, Plan
-    from memora.services import catalog as CAT
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import ModelCatalog, Plan
+    from blackmoa.services import catalog as CAT
 
     _, tok = await signup(client, name="문가영")
     async with session_scope() as db:
@@ -280,7 +280,7 @@ async def test_a_secretary_carries_its_own_budget(client: AsyncClient):
     The account's balance is the limit that always applies; these are the owner's own
     guard rails on one secretary, and a plan no longer carries them at all.
     """
-    from memora.models import Plan
+    from blackmoa.models import Plan
 
     _, tok = await signup(client, name="이도현")
     a = (await client.post("/api/agents", json={"name": "예산"}, headers=auth(tok))).json()

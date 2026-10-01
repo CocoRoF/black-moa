@@ -9,6 +9,6 @@ interface UIState {
 }
 export const useUI = create<UIState>((set, get) => ({
   sidebarCollapsed: false,
-  toggleSidebar: () => { const v = !get().sidebarCollapsed; storageSet("local", "memora:sidebar", v ? "1" : "0"); set({ sidebarCollapsed: v }); },
-  hydrate: () => set({ sidebarCollapsed: storageGet("local", "memora:sidebar") === "1" }),
+  toggleSidebar: () => { const v = !get().sidebarCollapsed; storageSet("local", "blackmoa:sidebar", v ? "1" : "0"); set({ sidebarCollapsed: v }); },
+  hydrate: () => set({ sidebarCollapsed: storageGet("local", "blackmoa:sidebar") === "1" }),
 }));

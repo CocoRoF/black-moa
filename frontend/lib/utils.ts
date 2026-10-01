@@ -43,7 +43,7 @@ export function storageSet(kind: "local" | "session", key: string, value: string
 
 /** Carry per-browser state across the 2026-09-09 rename.
  *
- *  The keys are namespaced `memora:` now. Without this, every signed-in browser would look
+ *  The keys are namespaced `blackmoa:` now. Without this, every signed-in browser would look
  *  logged out (the "had a session" flag is what triggers the silent refresh), every
  *  anonymous visitor to a shared secretary would start over, and the sidebar would forget
  *  itself. Runs once per load and is a no-op after the first. */
@@ -54,7 +54,7 @@ export function migrateStorageKeys() {
     try {
       for (const key of Object.keys(s)) {
         if (!key.startsWith("mfsg:")) continue;
-        const next = "memora:" + key.slice(5);
+        const next = "blackmoa:" + key.slice(5);
         if (s.getItem(next) === null) s.setItem(next, s.getItem(key) ?? "");
         s.removeItem(key);
       }

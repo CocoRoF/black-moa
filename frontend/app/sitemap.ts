@@ -15,7 +15,7 @@ interface Person { handle: string; updated_at: string; posts: { slug: string; up
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const site = (process.env.PUBLIC_URL || process.env.MEMORA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL || "").replace(/\/$/, "");
+  const site = (process.env.PUBLIC_URL || process.env.BLACKMOA_PUBLIC_URL || process.env.NEXT_PUBLIC_URL || "").replace(/\/$/, "");
   if (!site) return [];
   const entries: MetadataRoute.Sitemap = [
     { url: `${site}/`, changeFrequency: "weekly", priority: 1 },

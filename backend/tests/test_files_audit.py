@@ -24,7 +24,7 @@ pytestmark = pytest.mark.asyncio
 
 
 def test_markdown_and_windows_csv_are_recognised_by_name():
-    from memora.services.uploads import declared_mime
+    from blackmoa.services.uploads import declared_mime
     assert declared_mime("노트.md", "") == "text/markdown"
     assert declared_mime("표.csv", "application/vnd.ms-excel") == "text/csv"
     assert declared_mime("a.png", "image/png") == "image/png"
@@ -40,9 +40,9 @@ async def test_uploads_keep_korean_names_composed(client: AsyncClient):
 
 
 async def test_forgotten_uploads_are_collected_and_a_deleted_secretarys_files_stay_mine(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import Upload
-    from memora.services import files as FILES
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Upload
+    from blackmoa.services import files as FILES
 
     _, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "지울비서"}, headers=auth(tok))).json()
@@ -80,10 +80,10 @@ async def test_forgotten_uploads_are_collected_and_a_deleted_secretarys_files_st
 
 
 async def _owner_world(client):
-    from memora.db.session import session_scope
-    from memora.models import Agent, User, Visitor
-    from memora.services import files as FILES
-    from memora.services import uploads as U
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Agent, User, Visitor
+    from blackmoa.services import files as FILES
+    from blackmoa.services import uploads as U
 
     user, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "경계비서"}, headers=auth(tok))).json()
@@ -104,10 +104,10 @@ async def _owner_world(client):
 
 
 async def test_a_visitors_file_reaches_the_owners_secretary_only_as_untrusted_data(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import AgentFile
-    from memora.pipeline.tools.file_tools import FileRead, FilesList
-    from memora.services import files as FILES
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentFile
+    from blackmoa.pipeline.tools.file_tools import FileRead, FilesList
+    from blackmoa.services import files as FILES
 
     owner, a, f, _ = await _owner_world(client)
     ctx = SimpleNamespace(owner=owner, owner_id=owner.id, agent=a, audience="owner", visitor=None, relay_id=None, vision=True)
@@ -124,9 +124,9 @@ async def test_a_visitors_file_reaches_the_owners_secretary_only_as_untrusted_da
 
 
 async def test_a_conversation_that_read_a_room_is_not_distilled_later(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.memory.distill import _read_a_room
-    from memora.models import Conversation, ToolSpan, Turn
+    from blackmoa.db.session import session_scope
+    from blackmoa.memory.distill import _read_a_room
+    from blackmoa.models import Conversation, ToolSpan, Turn
 
     _, tok = await signup(client)
     agent = (await client.post("/api/agents", json={"name": "방비서"}, headers=auth(tok))).json()
@@ -146,9 +146,9 @@ async def test_a_conversation_that_read_a_room_is_not_distilled_later(client: As
 
 
 async def test_old_files_queued_again_are_read_not_given_up(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import AgentFile
-    from memora.worker.handlers import files_sweep
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentFile
+    from blackmoa.worker.handlers import files_sweep
 
     _, a, f, _ = await _owner_world(client)
     async with session_scope() as db:

@@ -32,7 +32,7 @@ INNOCENT = [
 
 
 def test_ownership_claims_are_recognised_and_ordinary_messages_are_not():
-    from memora.pipeline import guard
+    from blackmoa.pipeline import guard
 
     for text in ATTACKS:
         assert guard.claims_to_be_owner(text), text
@@ -44,7 +44,7 @@ def test_ownership_claims_are_recognised_and_ordinary_messages_are_not():
 
 def test_the_owners_own_identity_cannot_be_taken_by_a_visitor():
     """Exact, not heuristic: the refusal is about the value, not the phrasing."""
-    from memora.pipeline.guard import is_owner_identity
+    from blackmoa.pipeline.guard import is_owner_identity
 
     names, emails = ["박서준", "Park Seojun"], ["seo@corp.com"]
     assert is_owner_identity(names=names, emails=emails, name="박서준")
@@ -55,7 +55,7 @@ def test_the_owners_own_identity_cannot_be_taken_by_a_visitor():
 
 
 def test_the_visitor_rules_settle_identity_and_refuse_to_be_negotiated():
-    from memora.pipeline import base_prompt as BP
+    from blackmoa.pipeline import base_prompt as BP
 
     rules = BP.VISITOR_RULES
     # The claim is answered in advance, and the answer is that there is nothing to verify.
@@ -69,7 +69,7 @@ def test_the_visitor_rules_settle_identity_and_refuse_to_be_negotiated():
 
 
 def test_a_self_reported_name_is_printed_as_unverified():
-    from memora.pipeline import base_prompt as BP
+    from blackmoa.pipeline import base_prompt as BP
 
     section = BP.visitor_section(BP.VisitorIdentity(display_name="김민수", email="minsu@x.com"))
     assert "김민수" in section
@@ -113,8 +113,8 @@ async def test_a_visitor_cannot_introduce_themselves_as_the_owner(client: AsyncC
     """visitor_identify is where a visitor's words become a name the prompt prints."""
     import uuid as _uuid
 
-    from memora.db.session import session_scope
-    from memora.models import Conversation, Visitor
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Conversation, Visitor
 
     _, tok = await signup(client, name="박서준")
     await client.put("/api/users/me/profile", headers=auth(tok), json={
@@ -154,9 +154,9 @@ async def test_a_visitor_cannot_widen_what_the_redactor_lets_through(client: Asy
     otherwise be the visitor deciding what the redactor may pass."""
     import uuid as _uuid
 
-    from memora.db.session import session_scope
-    from memora.models import Conversation, Visitor
-    from memora.pipeline.runtime import runtime_key, runtimes
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import Conversation, Visitor
+    from blackmoa.pipeline.runtime import runtime_key, runtimes
 
     _, tok = await signup(client, name="박서준")
     await client.put("/api/users/me/profile", headers=auth(tok), json={

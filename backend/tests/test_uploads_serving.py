@@ -9,7 +9,7 @@ import io
 
 from httpx import AsyncClient
 
-from memora.services.uploads import _resize_image, _sniff, with_urls
+from blackmoa.services.uploads import _resize_image, _sniff, with_urls
 from tests.conftest import auth, signup
 
 

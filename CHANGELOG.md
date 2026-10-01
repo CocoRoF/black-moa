@@ -1,6 +1,13 @@
 # Changelog
 
-All notable changes to Memora are documented here (Keep a Changelog; entries name the symptom, the cause and the invariant).
+All notable changes to black-moa (formerly Memora) are documented here (Keep a Changelog; entries name the symptom, the cause and the invariant).
+
+## [Unreleased] — black-moa
+
+### Changed
+- **The product is black-moa now, served at `https://black.memo-ora.com`** (`plan/82-black-moa.md`). Every name moved: the Python package (`blackmoa`), the env prefix (`BLACKMOA_`), the compose project, containers, volumes, database, bucket, cookies and browser-storage keys, the desktop app id and installer names, and the repository the download center reads. Entries below this one keep the old name on purpose — they record what was decided then.
+- **The wordmark was re-set, the mark was not.** `tools/brand_wordmark.py` sets "black-moa" in Fredoka 700 and seats the original gradient "o" (`images/brand-o.png`) in its own width — centred on the font's narrower "o" it touched both neighbours.
+- **Container memory budgets are configurable** (`BLACKMOA_<SERVICE>_MEM` / `_MEM_RESERVE`, plus Postgres `shared_buffers` / `effective_cache_size`), so a second stack can share a host without the two claiming more memory than the machine has. Defaults are unchanged.
 
 ## [Unreleased] — many Claude accounts instead of one
 

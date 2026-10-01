@@ -46,9 +46,9 @@ async def _up(client, tok, name, data, mime):
 
 
 async def _ingest_all(monkeypatch):
-    from memora.db.session import session_scope
-    from memora.models import AgentFile
-    from memora.services import files as FILES
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentFile
+    from blackmoa.services import files as FILES
 
     async def fake_caption(db, f, data):
         return "파란 사각형 사진"
@@ -108,8 +108,8 @@ async def test_storage_is_one_account_and_deleting_frees_it(client: AsyncClient)
 
 
 async def test_a_full_account_refuses_new_files_and_says_so_once(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import InboxItem, Plan, User
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import InboxItem, Plan, User
 
     user, tok, agent, conv = await _setup(client)
     async with session_scope() as db:
@@ -132,9 +132,9 @@ async def test_a_full_account_refuses_new_files_and_says_so_once(client: AsyncCl
 
 
 async def test_deleted_files_are_really_removed_after_thirty_days(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import AgentFile, Upload
-    from memora.services import files as FILES
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import AgentFile, Upload
+    from blackmoa.services import files as FILES
 
     _, tok, agent, conv = await _setup(client)
     img = await _up(client, tok, "old.jpg", _jpeg(), "image/jpeg")

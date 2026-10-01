@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const d = await fetchLegal();
-  return { title: `이용약관 · ${d?.service ?? "Memora"}`, description: `${d?.service ?? "Memora"} 이용약관 (시행일 ${d?.effective_date ?? ""})` };
+  return { title: `이용약관 · ${d?.service ?? "black-moa"}`, description: `${d?.service ?? "black-moa"} 이용약관 (시행일 ${d?.effective_date ?? ""})` };
 }
 
 export default async function Page() {

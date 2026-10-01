@@ -40,7 +40,7 @@ export function LegalDoc({ kind, data }: { kind: LegalKind; data: LegalPayload |
   return (
     <article className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
       <header className="border-b border-border pb-6">
-        <p className="text-sm font-medium text-accent">{data?.service ?? "Memora"}</p>
+        <p className="text-sm font-medium text-accent">{data?.service ?? "black-moa"}</p>
         <h1 className="mt-1 text-[28px] font-bold tracking-tight">{TITLE[kind]}</h1>
         {data ? <p className="mt-2 text-sm text-muted-fg">시행일 {data.effective_date}</p> : null}
         <p className="mt-3 text-sm">

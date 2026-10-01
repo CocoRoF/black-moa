@@ -6,9 +6,9 @@ import uuid
 import pytest
 from sqlalchemy import func, select
 
-from memora.db.session import session_scope
-from memora.models import Job
-from memora.services import jobs as J
+from blackmoa.db.session import session_scope
+from blackmoa.models import Job
+from blackmoa.services import jobs as J
 
 
 @pytest.mark.asyncio
@@ -51,8 +51,8 @@ async def test_one_slow_kind_cannot_take_the_whole_queue(client):
     every worker slot for twenty minutes: no indexing, no notifications, no credit sweeps.
     The claim now skips the kinds a worker already has its fill of.
     """
-    from memora.db.session import session_scope
-    from memora.services import jobs as J
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import jobs as J
 
     async with session_scope() as db:
         for _ in range(3):

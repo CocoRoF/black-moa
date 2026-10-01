@@ -1,7 +1,7 @@
-# Memora — production stack. Usage (server): cd deploy && sudo docker compose -p memora up -d --build
+# black-moa — production stack. Usage (server): cd deploy && sudo docker compose -p blackmoa up -d --build
 #
 # Host budgets (plan/32 §1). This host has 4 CPU and 11.4GB and, since odysseus and RAG
-# Backborn both moved to the 2222 machine on 2026-09-11, Memora is the only thing on it.
+# Backborn both moved to the 2222 machine on 2026-09-11, black-moa is the only thing on it.
 # Every container had `cpus=0 mem=0` — unlimited — which meant a runaway worker could
 # starve the backend and Postgres alike. The budgets below are sized for a dedicated host:
 # about 9.5GB of the 11.4 is handed out, leaving the rest for the kernel and page cache.
@@ -13,21 +13,23 @@
 # then kill something of its own choosing rather than the container that misbehaved.
 # `mem_reservation` is what protects Postgres: it is the last thing that should be squeezed.
 #
-# Each CPU limit reads MEMORA_<SERVICE>_CPUS and falls back to the value sized for this host.
+# Each limit reads BLACKMOA_<SERVICE>_CPUS / _MEM / _MEM_RESERVE and falls back to the value sized for a
+# host of its own. On a host shared with another stack (black.memo-ora.com sits next to Memora, plan/82)
+# the production .env sets them lower so the two never claim more memory than the machine has.
 # Docker refuses a limit larger than the machine, so a smaller box (the 2-core CI runner that
 # smokes this stack) sets them lower; the production .env leaves them unset.
-name: memora
+name: blackmoa
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: memora-postgres
-    cpus: ${MEMORA_POSTGRES_CPUS:-2.5}
-    mem_limit: 2560m
-    mem_reservation: 1g
+    container_name: blackmoa-postgres
+    cpus: ${BLACKMOA_POSTGRES_CPUS:-2.5}
+    mem_limit: ${BLACKMOA_POSTGRES_MEM:-2560m}
+    mem_reservation: ${BLACKMOA_POSTGRES_MEM_RESERVE:-1g}
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-memora}
-      POSTGRES_USER: ${POSTGRES_USER:-memora}
+      POSTGRES_DB: ${POSTGRES_DB:-blackmoa}
+      POSTGRES_USER: ${POSTGRES_USER:-blackmoa}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
       TZ: ${TZ:-Asia/Seoul}
@@ -41,9 +43,9 @@ services:
       - -c
       - max_connections=200
       - -c
-      - shared_buffers=768MB
+      - shared_buffers=${BLACKMOA_PG_SHARED_BUFFERS:-768MB}
       - -c
-      - effective_cache_size=2560MB
+      - effective_cache_size=${BLACKMOA_PG_EFFECTIVE_CACHE:-2560MB}
       - -c
       - work_mem=16MB
       - -c
@@ -61,24 +63,24 @@ services:
     # Parallel workers hand results to each other through /dev/shm, which Docker gives 64MB.
     shm_size: 256m
     volumes:
-      - memora-pgdata:/var/lib/postgresql/data
+      - blackmoa-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-memora} -d ${POSTGRES_DB:-memora}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-blackmoa} -d ${POSTGRES_DB:-blackmoa}"]
       interval: 15s
       timeout: 5s
       retries: 5
-    networks: [memora-net]
+    networks: [blackmoa-net]
 
   backend:
     build:
       context: ../backend
       args:
         CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-2.1.236}
-    image: memora-backend
-    container_name: memora-backend
-    cpus: ${MEMORA_BACKEND_CPUS:-3.0}
-    mem_limit: 3584m
-    mem_reservation: 1536m
+    image: blackmoa-backend
+    container_name: blackmoa-backend
+    cpus: ${BLACKMOA_BACKEND_CPUS:-3.0}
+    mem_limit: ${BLACKMOA_BACKEND_MEM:-3584m}
+    mem_reservation: ${BLACKMOA_BACKEND_MEM_RESERVE:-1536m}
     restart: unless-stopped
     init: false
     depends_on:
@@ -87,101 +89,101 @@ services:
       seaweedfs:
         condition: service_started
     environment:
-      MEMORA_PUBLIC_URL: ${MEMORA_PUBLIC_URL:?set MEMORA_PUBLIC_URL}
-      MEMORA_SECRET_KEY: ${MEMORA_SECRET_KEY:?set MEMORA_SECRET_KEY}
-      MEMORA_BOOTSTRAP_TOKEN: ${MEMORA_BOOTSTRAP_TOKEN:-}
-      MEMORA_ENCRYPTION_KEY: ${MEMORA_ENCRYPTION_KEY:-}
-      MEMORA_ENCRYPTION_KEY_PREVIOUS: ${MEMORA_ENCRYPTION_KEY_PREVIOUS:-}
-      MEMORA_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memora}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-memora}
-      MEMORA_INTERNAL_API_URL: http://127.0.0.1:8000
-      MEMORA_DATA_DIR: /data
+      BLACKMOA_PUBLIC_URL: ${BLACKMOA_PUBLIC_URL:?set BLACKMOA_PUBLIC_URL}
+      BLACKMOA_SECRET_KEY: ${BLACKMOA_SECRET_KEY:?set BLACKMOA_SECRET_KEY}
+      BLACKMOA_BOOTSTRAP_TOKEN: ${BLACKMOA_BOOTSTRAP_TOKEN:-}
+      BLACKMOA_ENCRYPTION_KEY: ${BLACKMOA_ENCRYPTION_KEY:-}
+      BLACKMOA_ENCRYPTION_KEY_PREVIOUS: ${BLACKMOA_ENCRYPTION_KEY_PREVIOUS:-}
+      BLACKMOA_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-blackmoa}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-blackmoa}
+      BLACKMOA_INTERNAL_API_URL: http://127.0.0.1:8000
+      BLACKMOA_DATA_DIR: /data
       # Requests are short now that a stream returns its connection before it waits, so
       # this is a throughput dial rather than a leak allowance (plan/32 §3).
-      MEMORA_DB_POOL_SIZE: ${MEMORA_DB_POOL_SIZE:-16}
-      MEMORA_DB_MAX_OVERFLOW: ${MEMORA_DB_MAX_OVERFLOW:-24}
-      MEMORA_S3_ENDPOINT: ${MEMORA_S3_ENDPOINT:-http://seaweedfs:8333}
-      MEMORA_S3_BUCKET: ${MEMORA_S3_BUCKET:-memora}
-      MEMORA_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-memora}
-      MEMORA_S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
-      MEMORA_CLAUDE_HOME: /home/memora/.claude
-      CLAUDE_CONFIG_DIR: /home/memora/.claude
+      BLACKMOA_DB_POOL_SIZE: ${BLACKMOA_DB_POOL_SIZE:-16}
+      BLACKMOA_DB_MAX_OVERFLOW: ${BLACKMOA_DB_MAX_OVERFLOW:-24}
+      BLACKMOA_S3_ENDPOINT: ${BLACKMOA_S3_ENDPOINT:-http://seaweedfs:8333}
+      BLACKMOA_S3_BUCKET: ${BLACKMOA_S3_BUCKET:-blackmoa}
+      BLACKMOA_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-blackmoa}
+      BLACKMOA_S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
+      BLACKMOA_CLAUDE_HOME: /home/blackmoa/.claude
+      CLAUDE_CONFIG_DIR: /home/blackmoa/.claude
       # A stable name for this process. Left to default it is the container hostname, which
       # changes on every recreate — so each deploy added a row to process_stats and the
       # host's capacity was counted twice over until the old one aged out (plan/32 §6). It
       # also names the connections in pg_stat_activity.
-      MEMORA_WORKER_ID: ${MEMORA_API_ID:-api-1}
-      MEMORA_LOG_LEVEL: ${MEMORA_LOG_LEVEL:-INFO}
-      MEMORA_TIMEZONE: ${TZ:-Asia/Seoul}
-      MEMORA_OUTBOUND_ALLOWED_PORTS: ${MEMORA_OUTBOUND_ALLOWED_PORTS:-80,443}
-      MEMORA_PARSER_TIMEOUT_SECONDS: ${MEMORA_PARSER_TIMEOUT_SECONDS:-20}
-      MEMORA_PARSER_MEMORY_MB: ${MEMORA_PARSER_MEMORY_MB:-512}
-      MEMORA_PARSER_MAX_OUTPUT_BYTES: ${MEMORA_PARSER_MAX_OUTPUT_BYTES:-8388608}
+      BLACKMOA_WORKER_ID: ${BLACKMOA_API_ID:-api-1}
+      BLACKMOA_LOG_LEVEL: ${BLACKMOA_LOG_LEVEL:-INFO}
+      BLACKMOA_TIMEZONE: ${TZ:-Asia/Seoul}
+      BLACKMOA_OUTBOUND_ALLOWED_PORTS: ${BLACKMOA_OUTBOUND_ALLOWED_PORTS:-80,443}
+      BLACKMOA_PARSER_TIMEOUT_SECONDS: ${BLACKMOA_PARSER_TIMEOUT_SECONDS:-20}
+      BLACKMOA_PARSER_MEMORY_MB: ${BLACKMOA_PARSER_MEMORY_MB:-512}
+      BLACKMOA_PARSER_MAX_OUTPUT_BYTES: ${BLACKMOA_PARSER_MAX_OUTPUT_BYTES:-8388608}
       TZ: ${TZ:-Asia/Seoul}
     volumes:
       # /data also holds the Claude account pool's per-account CLI homes
       # (/data/claude-accounts/<id>), so a pooled login survives a redeploy.
-      - memora-data:/data
+      - blackmoa-data:/data
       # $HOME is a volume so the CLI can keep its own state files next to .claude even
       # though the image layer is read-only; the deeper .claude mount still wins.
-      - memora-home:/home/memora
-      - memora-claude:/home/memora/.claude
+      - blackmoa-home:/home/blackmoa
+      - blackmoa-claude:/home/blackmoa/.claude
     tmpfs:
       - /tmp:rw,nosuid,nodev,size=128m
-      - /home/memora/.cache:rw,nosuid,nodev,size=128m,uid=10001,gid=10001
+      - /home/blackmoa/.cache:rw,nosuid,nodev,size=128m,uid=10001,gid=10001
     expose: ["8000"]
     read_only: true
     cap_drop: [ALL]
     cap_add: [CHOWN, DAC_OVERRIDE, SETUID, SETGID]
     security_opt: ["no-new-privileges:true"]
     pids_limit: 512
-    networks: [memora-net]
+    networks: [blackmoa-net]
 
   worker:
-    image: memora-backend
-    container_name: memora-worker
-    cpus: ${MEMORA_WORKER_CPUS:-2.5}
-    mem_limit: 2048m
-    mem_reservation: 768m
+    image: blackmoa-backend
+    container_name: blackmoa-worker
+    cpus: ${BLACKMOA_WORKER_CPUS:-2.5}
+    mem_limit: ${BLACKMOA_WORKER_MEM:-2048m}
+    mem_reservation: ${BLACKMOA_WORKER_MEM_RESERVE:-768m}
     restart: unless-stopped
     command: ["worker"]
     depends_on:
       backend:
         condition: service_started
     environment:
-      MEMORA_PUBLIC_URL: ${MEMORA_PUBLIC_URL}
-      MEMORA_SECRET_KEY: ${MEMORA_SECRET_KEY}
-      MEMORA_BOOTSTRAP_TOKEN: ${MEMORA_BOOTSTRAP_TOKEN:-}
-      MEMORA_ENCRYPTION_KEY: ${MEMORA_ENCRYPTION_KEY:-}
-      MEMORA_ENCRYPTION_KEY_PREVIOUS: ${MEMORA_ENCRYPTION_KEY_PREVIOUS:-}
-      MEMORA_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memora}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-memora}
-      MEMORA_INTERNAL_API_URL: http://backend:8000
-      MEMORA_DATA_DIR: /data
+      BLACKMOA_PUBLIC_URL: ${BLACKMOA_PUBLIC_URL}
+      BLACKMOA_SECRET_KEY: ${BLACKMOA_SECRET_KEY}
+      BLACKMOA_BOOTSTRAP_TOKEN: ${BLACKMOA_BOOTSTRAP_TOKEN:-}
+      BLACKMOA_ENCRYPTION_KEY: ${BLACKMOA_ENCRYPTION_KEY:-}
+      BLACKMOA_ENCRYPTION_KEY_PREVIOUS: ${BLACKMOA_ENCRYPTION_KEY_PREVIOUS:-}
+      BLACKMOA_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-blackmoa}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-blackmoa}
+      BLACKMOA_INTERNAL_API_URL: http://backend:8000
+      BLACKMOA_DATA_DIR: /data
       # The worker runs a handful of jobs at a time, not a request stream: a smaller pool
       # leaves the shared Postgres budget to the API.
-      MEMORA_DB_POOL_SIZE: ${MEMORA_DB_POOL_SIZE_WORKER:-8}
-      MEMORA_DB_MAX_OVERFLOW: ${MEMORA_DB_MAX_OVERFLOW_WORKER:-8}
-      MEMORA_WORKER_CONCURRENCY: ${MEMORA_WORKER_CONCURRENCY:-8}
-      MEMORA_S3_ENDPOINT: ${MEMORA_S3_ENDPOINT:-http://seaweedfs:8333}
-      MEMORA_S3_BUCKET: ${MEMORA_S3_BUCKET:-memora}
-      MEMORA_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-memora}
-      MEMORA_S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
-      MEMORA_CLAUDE_HOME: /home/memora/.claude
-      CLAUDE_CONFIG_DIR: /home/memora/.claude
-      MEMORA_WORKER_ID: worker-1
-      MEMORA_LOG_LEVEL: ${MEMORA_LOG_LEVEL:-INFO}
-      MEMORA_TIMEZONE: ${TZ:-Asia/Seoul}
-      MEMORA_OUTBOUND_ALLOWED_PORTS: ${MEMORA_OUTBOUND_ALLOWED_PORTS:-80,443}
-      MEMORA_PARSER_TIMEOUT_SECONDS: ${MEMORA_PARSER_TIMEOUT_SECONDS:-20}
-      MEMORA_PARSER_MEMORY_MB: ${MEMORA_PARSER_MEMORY_MB:-512}
-      MEMORA_PARSER_MAX_OUTPUT_BYTES: ${MEMORA_PARSER_MAX_OUTPUT_BYTES:-8388608}
+      BLACKMOA_DB_POOL_SIZE: ${BLACKMOA_DB_POOL_SIZE_WORKER:-8}
+      BLACKMOA_DB_MAX_OVERFLOW: ${BLACKMOA_DB_MAX_OVERFLOW_WORKER:-8}
+      BLACKMOA_WORKER_CONCURRENCY: ${BLACKMOA_WORKER_CONCURRENCY:-8}
+      BLACKMOA_S3_ENDPOINT: ${BLACKMOA_S3_ENDPOINT:-http://seaweedfs:8333}
+      BLACKMOA_S3_BUCKET: ${BLACKMOA_S3_BUCKET:-blackmoa}
+      BLACKMOA_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-blackmoa}
+      BLACKMOA_S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
+      BLACKMOA_CLAUDE_HOME: /home/blackmoa/.claude
+      CLAUDE_CONFIG_DIR: /home/blackmoa/.claude
+      BLACKMOA_WORKER_ID: worker-1
+      BLACKMOA_LOG_LEVEL: ${BLACKMOA_LOG_LEVEL:-INFO}
+      BLACKMOA_TIMEZONE: ${TZ:-Asia/Seoul}
+      BLACKMOA_OUTBOUND_ALLOWED_PORTS: ${BLACKMOA_OUTBOUND_ALLOWED_PORTS:-80,443}
+      BLACKMOA_PARSER_TIMEOUT_SECONDS: ${BLACKMOA_PARSER_TIMEOUT_SECONDS:-20}
+      BLACKMOA_PARSER_MEMORY_MB: ${BLACKMOA_PARSER_MEMORY_MB:-512}
+      BLACKMOA_PARSER_MAX_OUTPUT_BYTES: ${BLACKMOA_PARSER_MAX_OUTPUT_BYTES:-8388608}
       TZ: ${TZ:-Asia/Seoul}
     volumes:
-      - memora-data:/data
-      - memora-home:/home/memora
-      - memora-claude:/home/memora/.claude
+      - blackmoa-data:/data
+      - blackmoa-home:/home/blackmoa
+      - blackmoa-claude:/home/blackmoa/.claude
     tmpfs:
       - /tmp:rw,nosuid,nodev,size=128m
-      - /home/memora/.cache:rw,nosuid,nodev,size=128m,uid=10001,gid=10001
+      - /home/blackmoa/.cache:rw,nosuid,nodev,size=128m,uid=10001,gid=10001
     read_only: true
     cap_drop: [ALL]
     cap_add: [CHOWN, DAC_OVERRIDE, SETUID, SETGID]
@@ -195,22 +197,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 90s
-    networks: [memora-net]
+    networks: [blackmoa-net]
 
   frontend:
     build:
       context: ../frontend
-    image: memora-frontend
-    container_name: memora-frontend
-    cpus: ${MEMORA_FRONTEND_CPUS:-1.0}
-    mem_limit: 640m
-    mem_reservation: 192m
+    image: blackmoa-frontend
+    container_name: blackmoa-frontend
+    cpus: ${BLACKMOA_FRONTEND_CPUS:-1.0}
+    mem_limit: ${BLACKMOA_FRONTEND_MEM:-640m}
+    mem_reservation: ${BLACKMOA_FRONTEND_MEM_RESERVE:-192m}
     restart: unless-stopped
     environment:
       INTERNAL_API_URL: http://backend:8000
       # Where this install actually is. Without it every og:image a crawler is handed
       # points at localhost, so a shared link previews as an empty rectangle.
-      PUBLIC_URL: ${MEMORA_PUBLIC_URL:?set MEMORA_PUBLIC_URL}
+      PUBLIC_URL: ${BLACKMOA_PUBLIC_URL:?set BLACKMOA_PUBLIC_URL}
       NODE_ENV: production
       PORT: "3000"
       HOSTNAME: 0.0.0.0
@@ -232,17 +234,17 @@ services:
       timeout: 5s
       retries: 5
       start_period: 40s
-    networks: [memora-net]
+    networks: [blackmoa-net]
 
   # Object storage. One process runs master, volume, filer and the S3 gateway — this is a
   # single-machine deployment, and three containers to coordinate would be ceremony. The
   # data lives in a volume, so the app stops caring which pod wrote a file.
   seaweedfs:
     image: chrislusf/seaweedfs:3.80
-    container_name: memora-seaweedfs
-    cpus: ${MEMORA_SEAWEEDFS_CPUS:-1.0}
-    mem_limit: 768m
-    mem_reservation: 256m
+    container_name: blackmoa-seaweedfs
+    cpus: ${BLACKMOA_SEAWEEDFS_CPUS:-1.0}
+    mem_limit: ${BLACKMOA_SEAWEEDFS_MEM:-768m}
+    mem_reservation: ${BLACKMOA_SEAWEEDFS_MEM_RESERVE:-256m}
     restart: unless-stopped
     # The identity file is written here at boot rather than bind-mounted. A mounted path
     # that does not exist on the host is created by Docker as a *directory*, and the
@@ -253,15 +255,15 @@ services:
     command:
       - |
         set -e
-        printf '{"identities":[{"name":"memora","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Read","Write","List","Tagging","Admin"]}]}' \
+        printf '{"identities":[{"name":"blackmoa","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Read","Write","List","Tagging","Admin"]}]}' \
           "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" > /tmp/s3.json
         exec weed server -dir=/data -master.volumeSizeLimitMB=1024 -volume.max=0 \
           -s3 -s3.port=8333 -s3.config=/tmp/s3.json -filer -ip=seaweedfs
     environment:
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-memora}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-blackmoa}
       S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
     volumes:
-      - memora-seaweed:/data
+      - blackmoa-seaweed:/data
     expose: ["8333"]
     healthcheck:
       # An authenticated gateway answers an anonymous request with 403, which wget calls a
@@ -273,17 +275,17 @@ services:
       retries: 5
       start_period: 30s
     security_opt: ["no-new-privileges:true"]
-    networks: [memora-net]
+    networks: [blackmoa-net]
 
   nginx:
     image: nginx:1.27-alpine
-    container_name: memora-nginx
-    cpus: ${MEMORA_NGINX_CPUS:-0.5}
-    mem_limit: 128m
-    mem_reservation: 64m
+    container_name: blackmoa-nginx
+    cpus: ${BLACKMOA_NGINX_CPUS:-0.5}
+    mem_limit: ${BLACKMOA_NGINX_MEM:-128m}
+    mem_reservation: ${BLACKMOA_NGINX_MEM_RESERVE:-64m}
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${NGINX_PORT:-58700}:80"
+      - "127.0.0.1:${NGINX_PORT:-58710}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on: [backend, frontend]
@@ -293,15 +295,15 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
-    networks: [memora-net]
+    networks: [blackmoa-net]
 
 volumes:
-  memora-seaweed:
-  memora-pgdata:
-  memora-data:
-  memora-home:
-  memora-claude:
+  blackmoa-seaweed:
+  blackmoa-pgdata:
+  blackmoa-data:
+  blackmoa-home:
+  blackmoa-claude:
 
 networks:
-  memora-net:
-    name: memora-net
+  blackmoa-net:
+    name: blackmoa-net

@@ -10,8 +10,8 @@ import uuid as _uuid
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.models import Conversation, Room, RoomMember
+from blackmoa.db.session import session_scope
+from blackmoa.models import Conversation, Room, RoomMember
 from tests.conftest import auth, signup
 
 
@@ -118,7 +118,7 @@ async def test_my_own_secretary_chat_is_a_room_and_the_turn_still_runs(client: A
 
     # 대화에 말이 쌓이면 방에도 쌓인다. 한 줄이 두 군데로 갈라지지 않는다.
     async with session_scope() as db:
-        from memora.services import conversations as CV
+        from blackmoa.services import conversations as CV
         conv = await db.get(Conversation, _uuid.UUID(room["conversation_id"]))
         await CV.add_message(db, conv, role="user", content="안녕하세요")
         await db.commit()
@@ -129,7 +129,7 @@ async def test_my_own_secretary_chat_is_a_room_and_the_turn_still_runs(client: A
 
 async def test_a_secretary_i_never_visited_is_visited_from_here(client: AsyncClient):
     """남의 비서와의 방은 여기서 바로 시작한다. 공개 문이 하는 일을 계정으로 한다 (plan/44 §5)."""
-    from memora.models import Visitor
+    from blackmoa.models import Visitor
 
     them, ttok = await signup(client, name="남세나")
     agent = (await client.post("/api/agents", json={"name": "서기"}, headers=auth(ttok))).json()
@@ -178,7 +178,7 @@ async def test_what_i_said_to_somebody_elses_secretary_is_mine_too(client: Async
     cid = r.json()["conversation_id"]
 
     async with session_scope() as db:
-        from memora.services import conversations as CV
+        from blackmoa.services import conversations as CV
         conv = await db.get(Conversation, _uuid.UUID(cid))
         await CV.add_message(db, conv, role="user", content="안녕하세요, 사장님 계신가요")
         await db.commit()
@@ -199,14 +199,14 @@ async def test_what_i_said_to_somebody_elses_secretary_is_mine_too(client: Async
 
 async def test_a_relay_is_not_a_room(client: AsyncClient):
     """비서끼리의 대화에는 사람이 들어가 있지 않다 (plan/44 §3)."""
-    from memora.models import Visitor
+    from blackmoa.models import Visitor
 
     them, ttok = await signup(client, name="남세나")
     agent = (await client.post("/api/agents", json={"name": "서기"}, headers=auth(ttok))).json()
     me, mytok = await signup(client)
 
     async with session_scope() as db:
-        from memora.services import conversations as CV
+        from blackmoa.services import conversations as CV
         v = Visitor(owner_id=_uuid.UUID(them["id"]), agent_id=_uuid.UUID(agent["id"]),
                     user_id=_uuid.UUID(me["id"]), kind="agent", token_hash=_uuid.uuid4().hex,
                     first_seen_at=__import__("datetime").datetime.now(__import__("datetime").UTC),
@@ -242,7 +242,7 @@ async def test_the_messenger_asks_a_secretary_the_way_the_public_door_does(clien
     cid = (await client.post(f"/api/public/links/{link['code']}/visitor", json={},
                              headers=auth(mytok))).json()["conversation_id"]
     async with session_scope() as db:
-        from memora.services import conversations as CV
+        from blackmoa.services import conversations as CV
         conv = await db.get(Conversation, _uuid.UUID(cid))
         await CV.add_message(db, conv, role="user", content="문 열어 두기")
         await db.commit()
@@ -273,7 +273,7 @@ async def test_a_room_says_whether_the_secretary_in_it_is_mine(client: AsyncClie
     cid = (await client.post(f"/api/public/links/{link['code']}/visitor", json={},
                              headers=auth(mytok))).json()["conversation_id"]
     async with session_scope() as db:
-        from memora.services import conversations as CV
+        from blackmoa.services import conversations as CV
         conv = await db.get(Conversation, _uuid.UUID(cid))
         await CV.add_message(db, conv, role="user", content="안녕하세요")
         await db.commit()
@@ -304,7 +304,7 @@ async def test_a_secretarys_transcript_is_not_edited_line_by_line(client: AsyncC
     agent = (await client.post("/api/agents", json={"name": "서기"}, headers=auth(tok))).json()
     room = (await client.post("/api/rooms/open", headers=auth(tok), json={"agent_id": agent["id"]})).json()
     async with session_scope() as db:
-        from memora.services import conversations as CV
+        from blackmoa.services import conversations as CV
         conv = await db.get(Conversation, _uuid.UUID(room["conversation_id"]))
         m = await CV.add_message(db, conv, role="user", content="한 마디")
         await db.commit()
@@ -322,7 +322,7 @@ async def test_one_room_per_person_and_secretary_however_many_sittings(client: A
         c = (await client.post(f"/api/agents/{agent['id']}/conversations", json={}, headers=auth(tok))).json()
         cids.append(c["id"])
         async with session_scope() as db:
-            from memora.services import conversations as CV
+            from blackmoa.services import conversations as CV
             conv = await db.get(Conversation, _uuid.UUID(c["id"]))
             await CV.add_message(db, conv, role="user", content=f"자리 {i}")
             await db.commit()

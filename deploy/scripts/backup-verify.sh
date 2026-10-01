@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Decrypt and structurally verify an Memora backup without touching the live stack.
+# Decrypt and structurally verify an black-moa backup without touching the live stack.
 set -euo pipefail
 umask 077
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOY_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-BACKUP_ENV="${MEMORA_BACKUP_ENV:-$DEPLOY_DIR/backup.env}"
+BACKUP_ENV="${BLACKMOA_BACKUP_ENV:-$DEPLOY_DIR/backup.env}"
 
 if [ ! -f "$BACKUP_ENV" ]; then
   echo "missing $BACKUP_ENV" >&2
@@ -16,8 +16,8 @@ set -a
 . "$BACKUP_ENV"
 set +a
 
-: "${MEMORA_BACKUP_DIR:?set MEMORA_BACKUP_DIR in backup.env}"
-: "${MEMORA_BACKUP_AGE_IDENTITY:?set MEMORA_BACKUP_AGE_IDENTITY in backup.env}"
+: "${BLACKMOA_BACKUP_DIR:?set BLACKMOA_BACKUP_DIR in backup.env}"
+: "${BLACKMOA_BACKUP_AGE_IDENTITY:?set BLACKMOA_BACKUP_AGE_IDENTITY in backup.env}"
 for cmd in age sha256sum tar pg_restore; do
   command -v "$cmd" >/dev/null 2>&1 || {
     # pg_restore is the one a fresh host does not have: it comes from postgresql-client,
@@ -28,14 +28,14 @@ for cmd in age sha256sum tar pg_restore; do
     exit 1
   }
 done
-if [ ! -r "$MEMORA_BACKUP_AGE_IDENTITY" ]; then
+if [ ! -r "$BLACKMOA_BACKUP_AGE_IDENTITY" ]; then
   echo "age identity is not readable" >&2
   exit 1
 fi
 
 archive="${1:-}"
 if [ -z "$archive" ]; then
-  archive="$(find "$MEMORA_BACKUP_DIR" -maxdepth 1 -type f -name 'memora-*.tar.gz.age' -printf '%T@ %p\n' \
+  archive="$(find "$BLACKMOA_BACKUP_DIR" -maxdepth 1 -type f -name 'blackmoa-*.tar.gz.age' -printf '%T@ %p\n' \
     | sort -nr | head -n1 | cut -d' ' -f2-)"
 fi
 if [ -z "$archive" ] || [ ! -r "$archive" ]; then
@@ -43,11 +43,11 @@ if [ -z "$archive" ] || [ ! -r "$archive" ]; then
   exit 1
 fi
 
-tmp="$(mktemp -d "${TMPDIR:-/tmp}/memora-verify.XXXXXX")"
+tmp="$(mktemp -d "${TMPDIR:-/tmp}/blackmoa-verify.XXXXXX")"
 cleanup() { rm -rf "$tmp"; }
 trap cleanup EXIT INT TERM
 
-age -d -i "$MEMORA_BACKUP_AGE_IDENTITY" "$archive" > "$tmp/archive.tar.gz"
+age -d -i "$BLACKMOA_BACKUP_AGE_IDENTITY" "$archive" > "$tmp/archive.tar.gz"
 tar -xzf "$tmp/archive.tar.gz" -C "$tmp"
 (
   cd "$tmp"

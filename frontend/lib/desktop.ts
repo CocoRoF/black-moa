@@ -10,7 +10,7 @@
 
 export type Door = "chat" | "feed" | "community";
 
-/** 앱이 `window.__memoraHost` 로 내놓는 것. 브라우저에는 없다. */
+/** 앱이 `window.__blackmoaHost` 로 내놓는 것. 브라우저에는 없다. */
 export interface DesktopHost {
   desktop?: boolean;
   /** 앱의 틀 세대. 2 부터 앱이 틀을 그리고 웹은 문 안쪽만 그린다. */
@@ -30,7 +30,7 @@ export interface DesktopHost {
 }
 
 export function desktopHost(): DesktopHost | null {
-  try { return (window as unknown as { __memoraHost?: DesktopHost }).__memoraHost ?? null; } catch { return null; }
+  try { return (window as unknown as { __blackmoaHost?: DesktopHost }).__blackmoaHost ?? null; } catch { return null; }
 }
 
 /** 앱이 틀을 그리고 있나. 서버에서 그릴 때는 늘 아니다. */

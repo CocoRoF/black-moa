@@ -1,6 +1,6 @@
 /** The project's icons, in one place.
  *
- *  Every icon on a Memora screen is a Lucide line icon — the rail, the buttons, the boards.
+ *  Every icon on a black-moa screen is a Lucide line icon — the rail, the buttons, the boards.
  *  Nothing imports `lucide-react` directly (ESLint enforces it); screens import from here,
  *  and the domain sets below are the only place a name from the database becomes a glyph.
  */

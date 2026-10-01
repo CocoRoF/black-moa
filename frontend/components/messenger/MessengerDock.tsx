@@ -30,7 +30,7 @@ function plain(s: string) { return s.replace(/(\*\*|__|`+|~~)/g, "").replace(/^[
 
 /** 메신저 — 어느 화면에 있든 오른쪽 아래 (plan/44 §7).
  *
- *  Everything said inside Memora is a room, and a room can be read without leaving the page
+ *  Everything said inside black-moa is a room, and a room can be read without leaving the page
  *  you were on. On a desktop that is a panel in the corner; on a phone there is no corner
  *  free, so it takes the screen.
  *

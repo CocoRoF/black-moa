@@ -7,7 +7,7 @@
 import { _electron as electron } from '/home/workspace/.tools/pw/node_modules/playwright-core/index.mjs';
 import { mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-const SHOT = process.env.SHOT_DIR ?? '/tmp/memora-shots';
+const SHOT = process.env.SHOT_DIR ?? '/tmp/blackmoa-shots';
 mkdirSync(SHOT, { recursive: true });
 const BIN = new URL('../node_modules/electron/dist/electron', import.meta.url).pathname;
 let bad = 0;
@@ -15,8 +15,8 @@ const say = (ok, what, extra = '') => { if (!ok) bad++; console.log(`${ok ? '  o
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const app = await electron.launch({ executablePath: BIN,
-  args: ['.', '--avatar', '--no-sandbox', '--disable-gpu', `--user-data-dir=${process.env.PROFILE_DIR ?? '/tmp/memora-conn'}`],
-  env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, MEMORA_TEST_HOOKS: '1' } });
+  args: ['.', '--avatar', '--no-sandbox', '--disable-gpu', `--user-data-dir=${process.env.PROFILE_DIR ?? '/tmp/blackmoa-conn'}`],
+  env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, BLACKMOA_TEST_HOOKS: '1' } });
 await app.firstWindow();
 let shell = null, chip = null, av = null;
 for (let i = 0; i < 30 && !(shell && chip && av); i++) {
@@ -29,10 +29,10 @@ say(!!(shell && chip && av), '틀·아바타·컨트롤이 뜬다');
 await sleep(2000);
 
 // 처음에는 꺼져 있다 — 화면은 사람이 켜야 나간다
-await shell.evaluate(() => window.memora.shell.setSettings({ capture: false }));
+await shell.evaluate(() => window.blackmoa.shell.setSettings({ capture: false }));
 await sleep(500);
 say((await chip.locator('[title="화면 보여주기"]').count()) === 0, '꺼져 있으면 [화면 보여주기] 가 없다');
-await shell.evaluate(() => window.memora.shell.select('settings'));
+await shell.evaluate(() => window.blackmoa.shell.select('settings'));
 await sleep(1000);
 say((await shell.getByText('화면 보여주기').count()) >= 1, '설정에 [화면 보여주기] 가 있다');
 await shell.getByRole('switch', { name: '화면 보여주기' }).click();
@@ -84,19 +84,19 @@ if (process.env.TALK) {
   let a = null;
   for (let i = 0; i < 120; i++) {
     await sleep(1000);
-    a = await app.evaluate(() => globalThis.__memoraTest.quick());
+    a = await app.evaluate(() => globalThis.__blackmoaTest.quick());
     if (a?.done) break;
   }
   say(!!a?.done && !a?.error && (a?.text ?? '').length > 5, '화면을 보고 답한다', (a?.error ?? a?.text ?? '').slice(0, 60));
   // 웹의 그 대화에 화면이 붙은 말로 남는다(앱은 웹과 같은 대화에 말한다)
-  const q = await app.evaluate(() => globalThis.__memoraTest.quick());
-  const r = await app.evaluate((_e, path) => globalThis.__memoraTest.api(path), `/api/agents/${q.agentId}/conversations/${q.conversationId}/messages?limit=10`);
+  const q = await app.evaluate(() => globalThis.__blackmoaTest.quick());
+  const r = await app.evaluate((_e, path) => globalThis.__blackmoaTest.api(path), `/api/agents/${q.agentId}/conversations/${q.conversationId}/messages?limit=10`);
   const mine = [...(r?.items ?? [])].reverse().find((m) => m.role === 'user');
   say(mine?.content === '이 화면 좀 봐 줘.' && mine?.attachments?.length === 1 && String(mine.attachments[0].mime).startsWith('image/'),
       '웹의 그 대화에 화면이 붙은 말로 남는다', JSON.stringify({ content: mine?.content, atts: mine?.attachments?.map((a) => a.mime) }));
 }
 say((await chip.evaluate(() => 1)) === 1, '(컨트롤 창이 살아 있다)');
-await shell.evaluate(() => window.memora.shell.setSettings({ capture: false }));
+await shell.evaluate(() => window.blackmoa.shell.setSettings({ capture: false }));
 await app.close();
 console.log(bad ? `\n!! ${bad}건 실패` : '\n모두 정상');
 process.exit(bad ? 1 : 0);

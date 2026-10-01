@@ -1,7 +1,7 @@
 """Network identity: nodes that are real people, and friend links between accounts
 
 `network_nodes` was an address book — a card I wrote, pointing at nobody. A node can now
-*be* someone: a Memora account (`user_id`), a visitor who talked to my secretary
+*be* someone: a black-moa account (`user_id`), a visitor who talked to my secretary
 (`visitor_id`), or exactly one node per owner that is me (`is_self`). `network_links`
 carries friend requests between accounts, which is what makes a connection mutual instead
 of one person's private note.

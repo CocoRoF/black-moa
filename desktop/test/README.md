@@ -20,12 +20,12 @@ export PATH=/home/workspace/.tools/node22/bin:$PATH
 # 쓰기 위한 앱인지(plan/62): 틀·세 문·앱 모드·링크 규칙·알림·설정·빠른 대화·아바타·먼저 건넨 말·로그아웃.
 #   TALK=1 은 실제로 한 마디 묻는다, SIGNOUT=1 은 끝에 로그아웃한다, HOLD_S 는 그만큼 켜 두고 세션을 본다.
 #   화면은 xwd 로 통째로 찍는다(틀과 웹 뷰와 아바타가 서로 다른 창·뷰다).
-FRESH=1 TALK=1 MEMORA_EMAIL=... MEMORA_PASSWORD=... SHOT_DIR=/tmp/shots \
+FRESH=1 TALK=1 BLACKMOA_EMAIL=... BLACKMOA_PASSWORD=... SHOT_DIR=/tmp/shots \
   xvfb-run -a -s "-screen 0 1440x900x24" node test/shell.mjs
 
 # 아바타: 뜨는지, 접히는지, 제자리에 있는지, 말을 받는지
 #   (shell.mjs 를 먼저 돌려 로그인된 프로필을 만들어 둔다)
-PROFILE_DIR=/tmp/memora-shell TALK=1 SHOT_DIR=/tmp/shots xvfb-run -a node test/avatar.mjs
+PROFILE_DIR=/tmp/blackmoa-shell TALK=1 SHOT_DIR=/tmp/shots xvfb-run -a node test/avatar.mjs
 
 # 구워 낸 설치본이 진짜로 뜨는지 (asar 에서만 드러나는 것들)
 SHOT_DIR=/tmp/shots xvfb-run -a node test/packaged.mjs <AppRun 또는 실행 파일 경로>

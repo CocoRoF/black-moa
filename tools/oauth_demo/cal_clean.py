@@ -1,16 +1,16 @@
 import asyncio, uuid, sys
 from sqlalchemy import select, text
-from memora.db.session import session_scope
-from memora.models import Connection
-from memora.providers.http import request
-from memora.services import connections as CN
+from blackmoa.db.session import session_scope
+from blackmoa.models import Connection
+from blackmoa.providers.http import request
+from blackmoa.services import connections as CN
 OWNER = uuid.UUID("06abbc3c-4343-75d8-8000-ac12a2c1711a")
 PREFIXES = tuple(sys.argv[1:]) or ("Meeting with Jamie",)
 async def main():
     async with session_scope() as db:
         conn = (await db.execute(select(Connection).where(Connection.owner_id == OWNER, Connection.provider == "google"))).scalars().first()
         tok = await CN.access_token(db, conn)
-        # Memora 쪽: 미팅 일정과 미팅 요청을 지운다(데모 흔적)
+        # black-moa 쪽: 미팅 일정과 미팅 요청을 지운다(데모 흔적)
         await db.execute(text("DELETE FROM schedule_events WHERE owner_id = :o AND source = 'meeting'"), {"o": OWNER})
         await db.execute(text("DELETE FROM inbox_items WHERE owner_id = :o AND kind = 'meeting_request'"), {"o": OWNER})
         await db.commit()

@@ -20,7 +20,7 @@ async def test_one_saturated_lane_does_not_delay_another():
     document parsing took the threads a chat turn then waited for. Separate pools, separate
     queues: filling one is not a way to slow the other down.
     """
-    from memora.core.pools import SIZES, run_blocking, stats
+    from blackmoa.core.pools import SIZES, run_blocking, stats
 
     hold = asyncio.Event()
 
@@ -48,9 +48,9 @@ async def test_one_saturated_lane_does_not_delay_another():
 @_async
 async def test_every_request_is_recorded_with_its_lane(client: AsyncClient):
     """A record of what was served, written off the request's own path."""
-    from memora.core import traffic as TF
-    from memora.db.session import session_scope
-    from memora.services import traffic as TR
+    from blackmoa.core import traffic as TF
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import traffic as TR
 
     _, tok = await signup(client, name="측정")
     TF.take_batch(10_000)                      # start from a known point
@@ -86,7 +86,7 @@ async def test_a_request_in_flight_is_visible_while_it_runs(app, client: AsyncCl
     Asked from inside a request that is still running, because that is the situation the
     live list exists for — an operator looking at a call that has not come back yet.
     """
-    from memora.core import traffic as TF
+    from blackmoa.core import traffic as TF
 
     seen: dict = {}
 
@@ -115,7 +115,7 @@ def test_nothing_blocking_is_left_on_the_shared_executor():
     """
     import pathlib
 
-    root = pathlib.Path(__file__).resolve().parents[1] / "src" / "memora"
+    root = pathlib.Path(__file__).resolve().parents[1] / "src" / "blackmoa"
     offenders = []
     for f in root.rglob("*.py"):
         if f.name == "pools.py":
@@ -132,9 +132,9 @@ def test_every_pool_a_call_site_names_actually_exists():
     import pathlib
     import re
 
-    from memora.core.pools import SIZES
+    from blackmoa.core.pools import SIZES
 
-    root = pathlib.Path(__file__).resolve().parents[1] / "src" / "memora"
+    root = pathlib.Path(__file__).resolve().parents[1] / "src" / "blackmoa"
     used = set()
     for f in root.rglob("*.py"):
         for m in re.finditer(r'(?:run_blocking|pools\.to_thread|to_thread)\(\s*"([a-z_]+)"', f.read_text()):
@@ -147,8 +147,8 @@ def test_community_images_do_not_resize_in_the_document_pool():
     on a board pushed back knowledge indexing — one feature degrading an unrelated one."""
     import inspect
 
-    from memora.core.pools import SIZES
-    from memora.services import uploads as U
+    from blackmoa.core.pools import SIZES
+    from blackmoa.services import uploads as U
 
     assert "community" in SIZES and "crawl" in SIZES, SIZES
     assert "lane" in inspect.signature(U.store).parameters
@@ -158,13 +158,13 @@ def test_community_images_do_not_resize_in_the_document_pool():
 
 def test_a_lane_can_be_rewidened_without_a_deploy(monkeypatch):
     """A class of work invented later has to be tunable the day it ships."""
-    from memora.core import pools
+    from blackmoa.core import pools
 
-    monkeypatch.setenv("MEMORA_POOL_CRAWL", "24")
+    monkeypatch.setenv("BLACKMOA_POOL_CRAWL", "24")
     assert pools._configured("crawl") == 24
-    monkeypatch.setenv("MEMORA_POOL_CRAWL", "banana")
+    monkeypatch.setenv("BLACKMOA_POOL_CRAWL", "banana")
     assert pools._configured("crawl") == pools.DEFAULT_SIZES["crawl"]   # ignored, not obeyed
-    monkeypatch.setenv("MEMORA_POOL_CRAWL", "999999")
+    monkeypatch.setenv("BLACKMOA_POOL_CRAWL", "999999")
     assert pools._configured("crawl") == pools.DEFAULT_SIZES["crawl"]
     assert pools._configured("something-new") == pools.DEFAULT_OTHER    # still gets a pool
 
@@ -175,7 +175,7 @@ def test_a_class_named_before_its_handlers_still_has_a_ceiling():
     The tally used to be taken from the exact kind→class map, which has no entry for a
     prefix class — so the crawl ceiling counted zero jobs however many were running.
     """
-    from memora.worker.__main__ import CLASS_LIMITS, _blocked, _class_of
+    from blackmoa.worker.__main__ import CLASS_LIMITS, _blocked, _class_of
 
     assert _class_of("crawl.places") == "crawl"
     limit = CLASS_LIMITS["crawl"]
@@ -189,7 +189,7 @@ def test_the_last_slot_is_kept_for_work_someone_is_waiting_on():
     """plan/32 §4. Ceilings stop monopolies but promise nobody a turn: with every long
     class at its limit, a notification a person is waiting for still queues behind minutes
     of work. The reservation is the floor that ceilings cannot express."""
-    from memora.worker.__main__ import CONCURRENCY, RESERVED, _blocked
+    from blackmoa.worker.__main__ import CONCURRENCY, RESERVED, _blocked
 
     busy = {"knowledge.index": 3, "crawl.places": 3, "community.rank": 1}
     assert sum(busy.values()) == CONCURRENCY - 1
@@ -216,7 +216,7 @@ def test_one_class_of_work_cannot_take_every_worker_slot():
     no ranking. Per-kind limits did not help because the kinds were the same kind, and the
     thread pools do not help because the scarce resource here is a worker slot.
     """
-    from memora.worker.__main__ import CLASS_LIMITS, CONCURRENCY, KIND_CLASS, _blocked
+    from blackmoa.worker.__main__ import CLASS_LIMITS, CONCURRENCY, KIND_CLASS, _blocked
 
     docs_limit = CLASS_LIMITS["docs"]
     assert _blocked({}) == ([], [])
@@ -237,7 +237,7 @@ def test_a_long_stream_is_not_abnormal_but_a_silent_one_is():
     """What "stuck" means once a request can legitimately stay open for hours."""
     import time
 
-    from memora.core.traffic import SILENT_S, STUCK_S, Live
+    from blackmoa.core.traffic import SILENT_S, STUCK_S, Live
 
     now = time.monotonic()
 
@@ -270,8 +270,8 @@ async def test_one_owner_bulk_import_does_not_bury_everyone_else():
 
     from sqlalchemy import text as _text
 
-    from memora.core.database import manager
-    from memora.services import jobs as J
+    from blackmoa.core.database import manager
+    from blackmoa.services import jobs as J
 
     big, small = _uuid.uuid4(), _uuid.uuid4()
     async with manager.session("worker") as db:
@@ -303,8 +303,8 @@ async def test_a_prefix_ceiling_actually_filters_the_claim(client: AsyncClient):
     left computed but never interpolated, so a `crawl` ceiling was arithmetic with no
     effect. Nothing caught it because no `crawl.*` handler exists yet.
     """
-    from memora.db.session import session_scope
-    from memora.services import jobs as J
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import jobs as J
 
     mine = ["crawl.places", "notify.send"]
     async with session_scope("worker") as db:
@@ -333,8 +333,8 @@ async def test_the_worker_is_visible_from_the_api_process(client: AsyncClient):
     process that answered the request — the worker's pools and its share of the connection
     pool were on no screen at all, which is a poor place to tune an allocation from.
     """
-    from memora.db.session import session_scope
-    from memora.services import procstats as PS
+    from blackmoa.db.session import session_scope
+    from blackmoa.services import procstats as PS
 
     async with session_scope("worker") as db:
         await PS.publish(db, "api")
@@ -364,15 +364,15 @@ async def test_a_process_that_stopped_publishing_is_not_counted(client: AsyncCli
     """Summing a dead process's numbers overstates the capacity that actually exists."""
     from datetime import UTC, datetime, timedelta
 
-    from memora.db.session import session_scope
-    from memora.models import ProcessStat
-    from memora.services import procstats as PS
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import ProcessStat
+    from blackmoa.services import procstats as PS
 
     async with session_scope("worker") as db:
         await PS.publish(db, "worker")
         await db.commit()
     async with session_scope("worker") as db:
-        stale = (await db.get(ProcessStat, f"worker:{__import__('memora.config', fromlist=['x']).get_settings().worker_id}"))
+        stale = (await db.get(ProcessStat, f"worker:{__import__('blackmoa.config', fromlist=['x']).get_settings().worker_id}"))
         stale.at = datetime.now(UTC) - timedelta(seconds=PS.FRESH_S + 30)
         await db.commit()
 
@@ -393,13 +393,13 @@ async def test_community_has_a_request_budget_per_account(client: AsyncClient, m
     board will never meet them. The limit is lowered here so the test does not have to send
     a hundred and twenty requests to prove the wiring.
     """
-    import memora.api.community as C
-    from memora.core.ratelimit import limiter
+    import blackmoa.api.community as C
+    from blackmoa.core.ratelimit import limiter
 
     assert C.WRITES_PER_MIN < C.READS_PER_MIN      # writes cost more, so they are tighter
 
     # The suite disables the limiter globally; this one test is about the limiter.
-    monkeypatch.delenv("MEMORA_RATELIMIT_DISABLED", raising=False)
+    monkeypatch.delenv("BLACKMOA_RATELIMIT_DISABLED", raising=False)
     monkeypatch.setattr(C, "READS_PER_MIN", 3)
     limiter._buckets.clear()
 
@@ -425,5 +425,5 @@ def test_the_worker_measures_its_loop_rather_than_its_age():
     import pathlib
     import re
 
-    src = (pathlib.Path(__file__).resolve().parents[1] / "src" / "memora" / "worker" / "__main__.py").read_text()
+    src = (pathlib.Path(__file__).resolve().parents[1] / "src" / "blackmoa" / "worker" / "__main__.py").read_text()
     assert re.search(r"^\s*install_loop_watchdog\(\)", src, re.M), "the worker never starts the watchdog"

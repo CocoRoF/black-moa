@@ -8,9 +8,9 @@
 import { _electron as electron } from '/home/workspace/.tools/pw/node_modules/playwright-core/index.mjs';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-const SHOT = process.env.SHOT_DIR ?? '/tmp/memora-shots';
+const SHOT = process.env.SHOT_DIR ?? '/tmp/blackmoa-shots';
 mkdirSync(SHOT, { recursive: true });
-const PROFILE = process.env.PROFILE_DIR ?? '/tmp/memora-conn';
+const PROFILE = process.env.PROFILE_DIR ?? '/tmp/blackmoa-conn';
 const BIN = new URL('../node_modules/electron/dist/electron', import.meta.url).pathname;
 let bad = 0;
 const say = (ok, what, extra = '') => { if (!ok) bad++; console.log(`${ok ? '  ok' : '!! 실패'}  ${what}${extra ? '  ' + extra : ''}`); };
@@ -20,7 +20,7 @@ async function launch() {
   const app = await electron.launch({ executablePath: BIN,
     // --avatar 는 진짜 스위치다. 로그인할 때 시작과 짝이 되는 것이라 테스트용 구멍이 아니다.
     args: ['.', '--avatar', '--no-sandbox', '--disable-gpu', `--user-data-dir=${PROFILE}`],
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, MEMORA_TEST_HOOKS: '1' } });
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, BLACKMOA_TEST_HOOKS: '1' } });
   const main = await app.firstWindow();
   await main.waitForLoadState('domcontentloaded');
   let av = null, chip = null;
@@ -39,7 +39,7 @@ const bounds = (app, part) =>
     const b = w.getBounds();
     return { ...b, visible: w.isVisible() };
   }, part);
-const hook = (app, fn, ...args) => app.evaluate((_e, [fn, args]) => globalThis.__memoraTest.avatar[fn](...args), [fn, args]);
+const hook = (app, fn, ...args) => app.evaluate((_e, [fn, args]) => globalThis.__blackmoaTest.avatar[fn](...args), [fn, args]);
 const figure = (av) => av.evaluate(() => { const r = document.querySelector('.ov-figure')?.getBoundingClientRect(); return r ? { x: r.x, y: r.y, w: r.width, h: r.height } : null; });
 const stored = () => JSON.parse(readFileSync(`${PROFILE}/settings.json`, 'utf8'));
 // 진짜 커서를 옮긴다(xdotool). 잠긴 컨트롤은 운영체제의 커서가 아바타 위에 있을 때만 나온다.
@@ -86,7 +86,7 @@ const centered = Math.abs(C.x + C.width / 2 - (A.x + A.width / 2)) <= 1 && C.y +
 say(centered, '컨트롤은 사진 아래 가운데에 붙어 있다', `avatar ${A.x},${A.y} ${A.width}x${A.height} / chip ${C.x},${C.y} ${C.width}x${C.height}`);
 // 음성 단추는 서비스가 음성을 쓸 때만 있다(plan/67). 운영의 관리자 설정과 상관없이 컨트롤을 시험하도록 이 앱 안에서만
 // 켠 것으로 둔다(서버의 설정은 건드리지 않는다).
-const voiceOn = () => app.evaluate(() => globalThis.__memoraTest.voice.set({ stt: true, tts: true }));
+const voiceOn = () => app.evaluate(() => globalThis.__blackmoaTest.voice.set({ stt: true, tts: true }));
 await voiceOn();
 for (let i = 0; i < 40 && !(await chip.locator('[title="말하기"]').count()); i++) await sleep(250);
 for (const t of ['말하기', '소리 끄기', '글로 묻기', '대화 전체 보기', '잠금 풀기']) say((await chip.locator(`[title="${t}"]`).count()) === 1, `컨트롤에 [${t}]`);
@@ -120,14 +120,14 @@ say((await revealed(app)) && (await chipShown(chip)) && (await bounds(app, 'chip
 
 // ── 관리자가 음성을 끄면 단추도 없다 (plan/67) ──
 await hover(app, av);
-await app.evaluate(() => globalThis.__memoraTest.voice.set({ stt: false, tts: false }));
+await app.evaluate(() => globalThis.__blackmoaTest.voice.set({ stt: false, tts: false }));
 await sleep(500);
 say((await chip.locator('[title="말하기"]').count()) === 0 && (await chip.locator('[title="소리 끄기"]').count()) === 0, '음성을 끄면 컨트롤에서 [말하기]·[소리] 가 사라진다');
 say((await chip.locator('[title="글로 묻기"]').count()) === 1, '글로 묻기는 그대로');
-await app.evaluate(() => globalThis.__memoraTest.voice.set({ stt: true, tts: false }));
+await app.evaluate(() => globalThis.__blackmoaTest.voice.set({ stt: true, tts: false }));
 await sleep(400);
 say((await chip.locator('[title="말하기"]').count()) === 1 && (await chip.locator('[title="소리 끄기"]').count()) === 0, '받아쓰기만 켜면 [말하기] 만');
-await app.evaluate(() => globalThis.__memoraTest.voice.set({ stt: true, tts: true }));
+await app.evaluate(() => globalThis.__blackmoaTest.voice.set({ stt: true, tts: true }));
 await sleep(400);
 
 // 잠겼을 때 휠은 사진을 건드리지 않는다
@@ -140,7 +140,7 @@ say(JSON.stringify(await figure(av)) === JSON.stringify(f0), '잠겼을 때는 �
 // 컨트롤을 끌면 아바타가 따라온다
 A = await bounds(app, 'avatar');
 C = await bounds(app, 'chip');
-await chip.evaluate(() => { window.memora.chip.moveBy(-60, -30); window.memora.chip.commitBounds(); });
+await chip.evaluate(() => { window.blackmoa.chip.moveBy(-60, -30); window.blackmoa.chip.commitBounds(); });
 await sleep(600);
 const A2 = await bounds(app, 'avatar');
 const C2 = await bounds(app, 'chip');
@@ -183,18 +183,18 @@ await av.screenshot({ path: `${SHOT}/av-unlocked.png`, omitBackground: true });
 
 // 크기: 오른쪽 아래, 왼쪽 위
 A = await bounds(app, 'avatar');
-await av.evaluate(() => { window.memora.avatar.resizeBy('se', 40, 30); window.memora.avatar.commitBounds(); });
+await av.evaluate(() => { window.blackmoa.avatar.resizeBy('se', 40, 30); window.blackmoa.avatar.commitBounds(); });
 await sleep(400);
 let B = await bounds(app, 'avatar');
 say(B.width === A.width + 40 && B.height === A.height + 30 && B.x === A.x && B.y === A.y, '오른쪽 아래 손잡이로 커진다', `${A.width}x${A.height} → ${B.width}x${B.height}`);
-await av.evaluate(() => { window.memora.avatar.resizeBy('nw', 20, 20); window.memora.avatar.commitBounds(); });
+await av.evaluate(() => { window.blackmoa.avatar.resizeBy('nw', 20, 20); window.blackmoa.avatar.commitBounds(); });
 await sleep(400);
 const B2 = await bounds(app, 'avatar');
 say(B2.width === B.width - 20 && B2.height === B.height - 20 && B2.x === B.x + 20 && B2.y === B.y + 20, '왼쪽 위 손잡이로 줄면 오른쪽 아래는 제자리');
-await av.evaluate(() => { window.memora.avatar.resizeBy('e', -2000, 0); window.memora.avatar.commitBounds(); });
+await av.evaluate(() => { window.blackmoa.avatar.resizeBy('e', -2000, 0); window.blackmoa.avatar.commitBounds(); });
 await sleep(400);
 say((await bounds(app, 'avatar')).width === 240, '가장 작아도 240 — 단추가 사진을 다 가리지 않게');
-await av.evaluate(() => { window.memora.avatar.resizeBy('e', 100, 0); window.memora.avatar.commitBounds(); });
+await av.evaluate(() => { window.blackmoa.avatar.resizeBy('e', 100, 0); window.blackmoa.avatar.commitBounds(); });
 await sleep(500);
 // 진짜 손잡이를 마우스로 끌어 본다
 A = await bounds(app, 'avatar');
@@ -208,7 +208,7 @@ say(B.width > A.width && B.height > A.height, '모서리 손잡이를 마우스�
 
 // 휠: 커서가 가리키는 곳을 붙잡고 확대
 await sleep(400);
-const key = (await av.evaluate(() => window.memora.avatar.subject())).imageUrl;
+const key = (await av.evaluate(() => window.blackmoa.avatar.subject())).imageUrl;
 await hook(app, 'flush');
 const scale0 = (stored().avatarViews ?? {})[key]?.scale ?? 1;
 const W = B.width, H = B.height;
@@ -237,7 +237,7 @@ say(!!views[key] && Math.abs(views[key].scale / scale0 - 1.08 ** 3) < 0.02, '사
 await av.screenshot({ path: `${SHOT}/av-zoomed.png`, omitBackground: true });
 
 // 창을 키우면 사진도 같이 커지고 같은 자리에 머문다
-await av.evaluate(() => { window.memora.avatar.resizeBy('e', 60, 0); window.memora.avatar.commitBounds(); });
+await av.evaluate(() => { window.blackmoa.avatar.resizeBy('e', 60, 0); window.blackmoa.avatar.commitBounds(); });
 await sleep(500);
 const g3 = await figure(av);
 say(g3.w >= g2.w, '창을 키우면 사진도 따라 커진다(줄지 않는다)', `${g2.w.toFixed(0)} → ${g3.w.toFixed(0)}`);
@@ -260,7 +260,7 @@ const kept = await bounds(app, 'avatar');
 
 // ── 다시 켜도 그대로 ──
 // 닫기를 기다리지 않는다 — 답이 오기 전에 부른 창이 사라진다.
-await av.evaluate(() => { void window.memora.avatar.close(); });
+await av.evaluate(() => { void window.blackmoa.avatar.close(); });
 await sleep(1200);
 say(!(await bounds(app, 'avatar')) && !(await bounds(app, 'chip')), '닫으면 두 창이 함께 사라진다');
 say(stored().avatarBounds?.width === kept.width, '닫을 때 자리를 적는다');
@@ -293,7 +293,7 @@ await av.locator('.ov-dock [title="잠그기"]').click();
 await sleep(300);
 
 if (process.env.TALK) {
-  await av.evaluate(() => window.memora.avatar.ask('한 문장으로만 인사해 주세요.'));
+  await av.evaluate(() => window.blackmoa.avatar.ask('한 문장으로만 인사해 주세요.'));
   let text = '';
   for (let i = 0; i < 60; i++) {
     await sleep(1000);

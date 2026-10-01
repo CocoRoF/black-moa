@@ -19,8 +19,8 @@ async def admin_client(client: AsyncClient):
     """An administrator, and the install left as it was found."""
     import uuid as _uuid
 
-    from memora.db.session import session_scope
-    from memora.models import User
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
 
     user, tok = await signup(client, f"console-{_uuid.uuid4().hex[:6]}@example.com")
     async with session_scope() as db:
@@ -32,7 +32,7 @@ async def admin_client(client: AsyncClient):
 
 async def test_llm_overview_joins_capacity_into_one_picture(admin_client):
     client, tok, _ = admin_client
-    from memora.core.llm_manager import manager as LLM
+    from blackmoa.core.llm_manager import manager as LLM
 
     cid = LLM.begin(provider="anthropic", model="claude-sonnet-5", kind="turn", owner_id="o", account="기본")
     LLM.end(cid, ok=True, input_tokens=100, output_tokens=20)
@@ -55,7 +55,7 @@ async def test_a_call_that_never_returns_is_visible_and_then_forgotten():
     """The in-flight list is only useful if it is real work."""
     import time as _t
 
-    from memora.core import llm_manager as M
+    from blackmoa.core import llm_manager as M
 
     mgr = M.LLMManager()
     cid = mgr.begin(provider="p", model="m", kind="turn")
@@ -79,8 +79,8 @@ async def test_jobs_overview_answers_the_queue_questions(admin_client):
     # that does not exist.
     from datetime import UTC, datetime
 
-    from memora.db.session import session_scope
-    from memora.models import WorkerHeartbeat
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import WorkerHeartbeat
 
     async with session_scope() as db:
         await db.merge(WorkerHeartbeat(worker_id="test-worker", last_seen_at=datetime.now(UTC), info={"pid": 1}))

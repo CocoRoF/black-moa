@@ -4,13 +4,13 @@ from decimal import Decimal
 
 import pytest
 
-from memora.core import codes
-from memora.core.redact import mask, redact_obj
-from memora.pipeline import budget, guard, personas
-from memora.pipeline.manifest import build_manifest
-from memora.providers.errors import classify, retryable
-from memora.services.chunking import chunk_text
-from memora.services.credits import llm_credits
+from blackmoa.core import codes
+from blackmoa.core.redact import mask, redact_obj
+from blackmoa.pipeline import budget, guard, personas
+from blackmoa.pipeline.manifest import build_manifest
+from blackmoa.providers.errors import classify, retryable
+from blackmoa.services.chunking import chunk_text
+from blackmoa.services.credits import llm_credits
 
 
 class _Cat:
@@ -132,7 +132,7 @@ def test_the_link_card_draws_the_secretarys_own_pictures(tmp_path):
 
     from PIL import Image
 
-    from memora.api.public import _og_font, _render_og
+    from blackmoa.api.public import _og_font, _render_og
 
     def png_bytes(size, colour):
         buf = _io.BytesIO()
@@ -165,7 +165,7 @@ def test_the_shipped_presets_match_the_ones_the_wizard_serves():
     """
     from pathlib import Path
 
-    from memora.api.public import PRESET_DIR
+    from blackmoa.api.public import PRESET_DIR
 
     served = Path(__file__).resolve().parents[2] / "frontend" / "public" / "presets"
     if not served.is_dir():          # the backend is deployed on its own
@@ -190,7 +190,7 @@ def test_the_anthropic_sdk_shim_drops_parameters_it_no_longer_takes():
     """
     import anthropic
 
-    from memora.providers.llm.anthropic_compat import install
+    from blackmoa.providers.llm.anthropic_compat import install
 
     install()
     client = anthropic.AsyncAnthropic(api_key="sk-ant-not-a-real-key")
@@ -202,7 +202,7 @@ def test_the_anthropic_sdk_shim_drops_parameters_it_no_longer_takes():
 def test_one_persons_summary_cannot_be_built_from_a_number():
     """The daily mail runs for everybody in one pass. A value that is not a string used to
     raise, and the people after that one got no mail at all."""
-    from memora.services import emails as E
+    from blackmoa.services import emails as E
 
     _, text, html = E.digest(name="장하람", date_label="9월 19일 (금)",
                              items=[("새 방문자 대화", 3), ("쓴 크레딧", 12.4)], link="https://x/inbox")
@@ -216,8 +216,8 @@ async def test_a_tool_between_two_sentences_starts_a_new_paragraph_and_visitors_
     방문자 화면은 도구 이름을 받지 않으니 영어 이름표를 함께 받는다."""
     import uuid as _uuid
 
-    from memora.pipeline.events import TurnJournal, _visitor_projection
-    from memora.pipeline.runner import tool_label_en
+    from blackmoa.pipeline.events import TurnJournal, _visitor_projection
+    from blackmoa.pipeline.runner import tool_label_en
 
     j = TurnJournal(_uuid.uuid4())
     j.emit("text.delta", {"text": "Let me check."})
@@ -229,11 +229,11 @@ async def test_a_tool_between_two_sentences_starts_a_new_paragraph_and_visitors_
                                                                          "label": "가능한 시간을 확인하는 중", "label_en": "Checking available times",
                                                                          "input_preview": "{\"secret\": 1}"}})
     assert ev["data"] == {"call_id": "c1", "name": "activity", "label": "가능한 시간을 확인하는 중", "label_en": "Checking available times"}
-    assert tool_label_en("mcp__memora__meeting_propose") == "Sending the meeting request" and tool_label_en("unknown") == "Checking"
+    assert tool_label_en("mcp__blackmoa__meeting_propose") == "Sending the meeting request" and tool_label_en("unknown") == "Checking"
 
 
 def test_a_connection_problem_opens_the_connections():
     """연결 오류 알림은 연결 칸으로 간다 (plan/81) — 예전엔 [비서 설정 열기]로 엉뚱한 곳을 열었다."""
-    from memora.services.notifications import link_for
+    from blackmoa.services.notifications import link_for
     assert link_for("integration_error", {}) == ("/app/account#connections", "연결 확인하기")
     assert link_for("agent_model_fallback", {})[0] == "/app/agents"

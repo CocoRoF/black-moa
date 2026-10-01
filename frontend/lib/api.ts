@@ -6,7 +6,7 @@ import { useAuth, type User } from "@/stores/auth";
 export type Json = Record<string, unknown>;
 
 let refreshing: Promise<string | null> | null = null;
-const HAD_SESSION = "memora:had-session";
+const HAD_SESSION = "blackmoa:had-session";
 /** We cannot read the httpOnly refresh cookie; remember that a session was created so first-time visitors don't hit /refresh (401 noise). */
 export function markSession(on: boolean) { try { if (on) localStorage.setItem(HAD_SESSION, "1"); else localStorage.removeItem(HAD_SESSION); } catch { /* ignore */ } }
 export function hadSession(): boolean { try { return localStorage.getItem(HAD_SESSION) === "1"; } catch { return false; } }
@@ -237,7 +237,7 @@ export interface CalendarWrite { created: boolean; schedule_event_id?: string; s
 export interface KnowledgeDoc { id: string; kind: "file" | "note" | "url"; title: string; filename: string | null; mime: string | null; size_bytes: number | null; source_url: string | null; status: "queued" | "processing" | "ready" | "failed" | string; error: string | null; chunk_count: number; embedding_model: string | null; created_at: string; updated_at: string | null; text_preview?: string }
 export interface Faq { id: string; question: string; answer: string; source: string }
 /** `person` is the identity layer (plan/31): who this node actually is.
- *  self — me · member — a Memora account · guest — someone who talked to my secretary ·
+ *  self — me · member — a black-moa account · guest — someone who talked to my secretary ·
  *  offline — a card I wrote. Only the first three have a face. */
 export type PersonClass = "self" | "member" | "guest" | "offline";
 export interface NetNode { link_code?: string; owner_node_id?: string; id: string; kind: string; name: string; aliases: string[]; tags: string[]; importance: number; source: string; last_contact_at: string | null; attrs: Record<string, any>; notes: string; community?: number; depth?: number; person: PersonClass | "agent" | "source"; is_self: boolean; user_id: string | null; visitor_id: string | null; avatar_url: string | null; hops?: number | null }
@@ -605,7 +605,7 @@ export const Drive = {
   /** 고른 파일을 [내 정보 → 파일]로 — 파일은 계정의 것이다(plan/77). */
   import: (file_ids: string[]) =>
     post<{ imported: { id: string; name: string }[]; failed: { drive_id: string; code: string }[] }>("/api/drive/import", { file_ids }),
-  /** [파일]의 파일을 내 Drive 의 "Memora" 폴더에 올린다. */
+  /** [파일]의 파일을 내 Drive 의 "black-moa" 폴더에 올린다. */
   save: (file_id: string) => post<{ id: string; name: string; link: string }>("/api/drive/save", { file_id }),
 };
 /** [내 정보 → 스케줄] (plan/56). 시각은 전부 주인의 시간대 — 화면은 받은 글자를 그대로 쓴다. */

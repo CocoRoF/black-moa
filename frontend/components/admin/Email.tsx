@@ -129,13 +129,13 @@ export function EmailPage() {
                        placeholder={secretSet ? "••••••••" : undefined} />
               </Field>
               <Field label={t("email.from")} hint={t("email.from_hint")} className="sm:col-span-2">
-                <Input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Memora <no-reply@memo-ora.com>" spellCheck={false} />
+                <Input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="black-moa <no-reply@black.memo-ora.com>" spellCheck={false} />
               </Field>
               {/* A second mailbox, because the two kinds of mail mean different things to
                   whoever gets them: one is a notice nobody should answer, the other is a
                   message a person wrote and expects a reply to. */}
               <Field label={t("email.from_agent")} hint={t("email.from_agent_hint")} className="sm:col-span-2">
-                <Input value={fromAgent} onChange={(e) => setFromAgent(e.target.value)} placeholder="Memora <memora@memo-ora.com>" spellCheck={false} />
+                <Input value={fromAgent} onChange={(e) => setFromAgent(e.target.value)} placeholder="black-moa <blackmoa@black.memo-ora.com>" spellCheck={false} />
               </Field>
               {/* Port 465 is implicit TLS and never negotiates STARTTLS, so offering the
                   switch there would be a control that does nothing. */}

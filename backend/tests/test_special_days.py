@@ -14,10 +14,10 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import delete
 
-from memora.db.session import session_scope
-from memora.models import SpecialDay, User
-from memora.services import settings as S
-from memora.services import special_days as SD
+from blackmoa.db.session import session_scope
+from blackmoa.models import SpecialDay, User
+from blackmoa.services import settings as S
+from blackmoa.services import special_days as SD
 from tests.conftest import auth, signup
 
 KST = ZoneInfo("Asia/Seoul")
@@ -279,7 +279,7 @@ async def test_a_failed_sync_keeps_what_was_there(monkeypatch):
         await db.commit()
 
     async def refused(method, url, **kw):
-        from memora.providers.http import ProviderHTTPError
+        from blackmoa.providers.http import ProviderHTTPError
         raise ProviderHTTPError(403, json.dumps({"OpenAPI_ServiceResponse": {"cmmMsgHeader": {"errMsg": "SERVICE_KEY_IS_NOT_REGISTERED_ERROR"}}}))
 
     monkeypatch.setattr(SD, "request", refused)
@@ -331,8 +331,8 @@ def _next_off_weekday() -> date:
 
 
 async def test_free_time_skips_public_holidays_unless_told_otherwise(client: AsyncClient):
-    from memora.services import profile as PF
-    from memora.services import schedule as SCH
+    from blackmoa.services import profile as PF
+    from blackmoa.services import schedule as SCH
 
     user, tok = await signup(client)
     hol = _next_off_weekday()
@@ -360,9 +360,9 @@ async def test_the_secretary_knows_the_holidays(client: AsyncClient):
     """주인에게는 그 기간의 특별한 날을, 외부인에게는 공휴일이라 비운 날을 말할 수 있게."""
     from types import SimpleNamespace
 
-    from memora.pipeline.tools.schedule_tools import CalendarAvailability, CalendarList
-    from memora.services import outsider as OUT
-    from memora.services import profile as PF
+    from blackmoa.pipeline.tools.schedule_tools import CalendarAvailability, CalendarList
+    from blackmoa.services import outsider as OUT
+    from blackmoa.services import profile as PF
 
     user, tok = await signup(client)
     hol = _next_off_weekday()
@@ -395,7 +395,7 @@ async def _admin(client: AsyncClient) -> str:
 async def test_the_admin_connects_the_official_source(client: AsyncClient, monkeypatch):
     from sqlalchemy import select
 
-    from memora.models import Job
+    from blackmoa.models import Job
 
     tok = await _admin(client)
     _, utok = await signup(client)
@@ -409,7 +409,7 @@ async def test_the_admin_connects_the_official_source(client: AsyncClient, monke
     assert r["key"]["has_value"] and "secret-service-key" not in json.dumps(r)
 
     async def refused(method, url, **kw):
-        from memora.providers.http import ProviderHTTPError
+        from blackmoa.providers.http import ProviderHTTPError
         raise ProviderHTTPError(403, json.dumps({"OpenAPI_ServiceResponse": {"cmmMsgHeader": {"errMsg": "SERVICE_KEY_IS_NOT_REGISTERED_ERROR"}}}))
 
     monkeypatch.setattr(SD, "request", refused)

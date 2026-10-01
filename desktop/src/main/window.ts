@@ -65,7 +65,7 @@ export function create(p: typeof paths, show: boolean): BrowserWindow {
     minWidth: 480,
     minHeight: 520,
     show: false,
-    title: 'Memora',
+    title: 'black-moa',
     backgroundColor: palette().bg,
     // 제목 줄은 앱이 그린다. 창 단추는 운영체제의 것을 그 위에 겹친다(맥은 신호등, 윈도·리눅스는 오른쪽 셋).
     ...(mac
@@ -190,7 +190,7 @@ function viewFor(door: Door, path?: string): WebContentsView {
       nodeIntegration: false,
       sandbox: true,
       spellcheck: true,
-      additionalArguments: [`--memora-door=${door}`, `--memora-shell=${SHELL_GEN}`],
+      additionalArguments: [`--blackmoa-door=${door}`, `--blackmoa-shell=${SHELL_GEN}`],
     },
   });
   v.setBackgroundColor(palette().bg);

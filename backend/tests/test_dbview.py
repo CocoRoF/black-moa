@@ -19,9 +19,9 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 async def admin_client(client: AsyncClient):
-    from memora.db.session import session_scope
-    from memora.models import User
-    from memora.services.dbview import ensure_role
+    from blackmoa.db.session import session_scope
+    from blackmoa.models import User
+    from blackmoa.services.dbview import ensure_role
 
     user, tok = await signup(client, f"dbview-{_uuid.uuid4().hex[:6]}@example.com")
     async with session_scope() as db:
@@ -112,7 +112,7 @@ async def test_everything_that_is_not_a_read_is_refused(admin_client, sql: str):
 async def test_the_database_is_untouched_by_a_refused_write(admin_client):
     """Not just refused — refused without effect."""
     client, tok = admin_client
-    from memora.db.session import session_scope
+    from blackmoa.db.session import session_scope
 
     async with session_scope() as db:
         before = (await db.execute(text("SELECT count(*) FROM audit_logs"))).scalar_one()
@@ -142,12 +142,12 @@ async def test_the_connection_comes_back_as_itself(admin_client):
     """The role and the read-only flag are transaction-scoped; if the rollback were ever
     skipped, the next borrower of that connection would inherit a crippled session."""
     client, tok = admin_client
-    from memora.db.session import session_scope
+    from blackmoa.db.session import session_scope
 
     await run(client, tok, "SELECT 1")
     await run(client, tok, "DELETE FROM users")          # fails inside the transaction
     async with session_scope() as db:
-        assert (await db.execute(text("SELECT current_user"))).scalar_one() == "memora"
+        assert (await db.execute(text("SELECT current_user"))).scalar_one() == "blackmoa"
         assert (await db.execute(text("SHOW transaction_read_only"))).scalar_one() == "off"
 
 
@@ -166,7 +166,7 @@ async def test_it_is_closed_to_everyone_but_an_administrator(client: AsyncClient
 
 async def test_every_query_is_written_to_the_audit_log(admin_client):
     client, tok = admin_client
-    from memora.db.session import session_scope
+    from blackmoa.db.session import session_scope
 
     await run(client, tok, "SELECT 42 AS answer")
     await run(client, tok, "DROP TABLE users")

@@ -7,11 +7,11 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import select
 
-from memora.db.session import session_scope
-from memora.memory.facade import AgentMemory
-from memora.models import Agent, Conversation, InboxItem, Notification, Visitor
-from memora.services.extract import extract
-from memora.services.retention import retention_purge_memory, retention_sweep
+from blackmoa.db.session import session_scope
+from blackmoa.memory.facade import AgentMemory
+from blackmoa.models import Agent, Conversation, InboxItem, Notification, Visitor
+from blackmoa.services.extract import extract
+from blackmoa.services.retention import retention_purge_memory, retention_sweep
 from tests.conftest import signup
 
 
